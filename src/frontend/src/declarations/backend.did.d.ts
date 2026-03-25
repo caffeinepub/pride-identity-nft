@@ -10,7 +10,54 @@ import type { ActorMethod } from '@icp-sdk/core/agent';
 import type { IDL } from '@icp-sdk/core/candid';
 import type { Principal } from '@icp-sdk/core/principal';
 
-export interface _SERVICE {}
+export type ExternalBlob = Uint8Array;
+export interface MintOutput { 'idCount' : bigint, 'record' : PrydoIdWithPhoto }
+export interface PrydoIdRecord {
+  'avatarType' : string,
+  'tier' : string,
+  'timestamp' : bigint,
+  'wallet' : string,
+}
+export interface PrydoIdWithPhoto {
+  'photo' : [] | [ExternalBlob],
+  'idRecord' : PrydoIdRecord,
+}
+export interface _CaffeineStorageCreateCertificateResult {
+  'method' : string,
+  'blob_hash' : string,
+}
+export interface _CaffeineStorageRefillInformation {
+  'proposed_top_up_amount' : [] | [bigint],
+}
+export interface _CaffeineStorageRefillResult {
+  'success' : [] | [boolean],
+  'topped_up_amount' : [] | [bigint],
+}
+export interface _SERVICE {
+  '_caffeineStorageBlobIsLive' : ActorMethod<[Uint8Array], boolean>,
+  '_caffeineStorageBlobsToDelete' : ActorMethod<[], Array<Uint8Array>>,
+  '_caffeineStorageConfirmBlobDeletion' : ActorMethod<
+    [Array<Uint8Array>],
+    undefined
+  >,
+  '_caffeineStorageCreateCertificate' : ActorMethod<
+    [string],
+    _CaffeineStorageCreateCertificateResult
+  >,
+  '_caffeineStorageRefillCashier' : ActorMethod<
+    [[] | [_CaffeineStorageRefillInformation]],
+    _CaffeineStorageRefillResult
+  >,
+  '_caffeineStorageUpdateGatewayPrincipals' : ActorMethod<[], undefined>,
+  'getAllMintedIds' : ActorMethod<[], Array<PrydoIdWithPhoto>>,
+  'getIdByWallet' : ActorMethod<[string], PrydoIdWithPhoto>,
+  'getIdCount' : ActorMethod<[], bigint>,
+  'mintId' : ActorMethod<
+    [string, string, string, [] | [ExternalBlob]],
+    MintOutput
+  >,
+  'uploadPhoto' : ActorMethod<[string, ExternalBlob], PrydoIdWithPhoto>,
+}
 export declare const idlService: IDL.ServiceClass;
 export declare const idlInitArgs: IDL.Type[];
 export declare const idlFactory: IDL.InterfaceFactory;

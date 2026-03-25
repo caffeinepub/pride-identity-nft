@@ -8,10 +8,138 @@
 
 import { IDL } from '@icp-sdk/core/candid';
 
-export const idlService = IDL.Service({});
+export const _CaffeineStorageCreateCertificateResult = IDL.Record({
+  'method' : IDL.Text,
+  'blob_hash' : IDL.Text,
+});
+export const _CaffeineStorageRefillInformation = IDL.Record({
+  'proposed_top_up_amount' : IDL.Opt(IDL.Nat),
+});
+export const _CaffeineStorageRefillResult = IDL.Record({
+  'success' : IDL.Opt(IDL.Bool),
+  'topped_up_amount' : IDL.Opt(IDL.Nat),
+});
+export const ExternalBlob = IDL.Vec(IDL.Nat8);
+export const PrydoIdRecord = IDL.Record({
+  'avatarType' : IDL.Text,
+  'tier' : IDL.Text,
+  'timestamp' : IDL.Int,
+  'wallet' : IDL.Text,
+});
+export const PrydoIdWithPhoto = IDL.Record({
+  'photo' : IDL.Opt(ExternalBlob),
+  'idRecord' : PrydoIdRecord,
+});
+export const MintOutput = IDL.Record({
+  'idCount' : IDL.Nat,
+  'record' : PrydoIdWithPhoto,
+});
+
+export const idlService = IDL.Service({
+  '_caffeineStorageBlobIsLive' : IDL.Func(
+      [IDL.Vec(IDL.Nat8)],
+      [IDL.Bool],
+      ['query'],
+    ),
+  '_caffeineStorageBlobsToDelete' : IDL.Func(
+      [],
+      [IDL.Vec(IDL.Vec(IDL.Nat8))],
+      ['query'],
+    ),
+  '_caffeineStorageConfirmBlobDeletion' : IDL.Func(
+      [IDL.Vec(IDL.Vec(IDL.Nat8))],
+      [],
+      [],
+    ),
+  '_caffeineStorageCreateCertificate' : IDL.Func(
+      [IDL.Text],
+      [_CaffeineStorageCreateCertificateResult],
+      [],
+    ),
+  '_caffeineStorageRefillCashier' : IDL.Func(
+      [IDL.Opt(_CaffeineStorageRefillInformation)],
+      [_CaffeineStorageRefillResult],
+      [],
+    ),
+  '_caffeineStorageUpdateGatewayPrincipals' : IDL.Func([], [], []),
+  'getAllMintedIds' : IDL.Func([], [IDL.Vec(PrydoIdWithPhoto)], ['query']),
+  'getIdByWallet' : IDL.Func([IDL.Text], [PrydoIdWithPhoto], ['query']),
+  'getIdCount' : IDL.Func([], [IDL.Nat], ['query']),
+  'mintId' : IDL.Func(
+      [IDL.Text, IDL.Text, IDL.Text, IDL.Opt(ExternalBlob)],
+      [MintOutput],
+      [],
+    ),
+  'uploadPhoto' : IDL.Func([IDL.Text, ExternalBlob], [PrydoIdWithPhoto], []),
+});
 
 export const idlInitArgs = [];
 
-export const idlFactory = ({ IDL }) => { return IDL.Service({}); };
+export const idlFactory = ({ IDL }) => {
+  const _CaffeineStorageCreateCertificateResult = IDL.Record({
+    'method' : IDL.Text,
+    'blob_hash' : IDL.Text,
+  });
+  const _CaffeineStorageRefillInformation = IDL.Record({
+    'proposed_top_up_amount' : IDL.Opt(IDL.Nat),
+  });
+  const _CaffeineStorageRefillResult = IDL.Record({
+    'success' : IDL.Opt(IDL.Bool),
+    'topped_up_amount' : IDL.Opt(IDL.Nat),
+  });
+  const ExternalBlob = IDL.Vec(IDL.Nat8);
+  const PrydoIdRecord = IDL.Record({
+    'avatarType' : IDL.Text,
+    'tier' : IDL.Text,
+    'timestamp' : IDL.Int,
+    'wallet' : IDL.Text,
+  });
+  const PrydoIdWithPhoto = IDL.Record({
+    'photo' : IDL.Opt(ExternalBlob),
+    'idRecord' : PrydoIdRecord,
+  });
+  const MintOutput = IDL.Record({
+    'idCount' : IDL.Nat,
+    'record' : PrydoIdWithPhoto,
+  });
+  
+  return IDL.Service({
+    '_caffeineStorageBlobIsLive' : IDL.Func(
+        [IDL.Vec(IDL.Nat8)],
+        [IDL.Bool],
+        ['query'],
+      ),
+    '_caffeineStorageBlobsToDelete' : IDL.Func(
+        [],
+        [IDL.Vec(IDL.Vec(IDL.Nat8))],
+        ['query'],
+      ),
+    '_caffeineStorageConfirmBlobDeletion' : IDL.Func(
+        [IDL.Vec(IDL.Vec(IDL.Nat8))],
+        [],
+        [],
+      ),
+    '_caffeineStorageCreateCertificate' : IDL.Func(
+        [IDL.Text],
+        [_CaffeineStorageCreateCertificateResult],
+        [],
+      ),
+    '_caffeineStorageRefillCashier' : IDL.Func(
+        [IDL.Opt(_CaffeineStorageRefillInformation)],
+        [_CaffeineStorageRefillResult],
+        [],
+      ),
+    '_caffeineStorageUpdateGatewayPrincipals' : IDL.Func([], [], []),
+    'getAllMintedIds' : IDL.Func([], [IDL.Vec(PrydoIdWithPhoto)], ['query']),
+    'getIdByWallet' : IDL.Func([IDL.Text], [PrydoIdWithPhoto], ['query']),
+    'getIdCount' : IDL.Func([], [IDL.Nat], ['query']),
+    'mintId' : IDL.Func(
+        [IDL.Text, IDL.Text, IDL.Text, IDL.Opt(ExternalBlob)],
+        [MintOutput],
+        [],
+      ),
+    'uploadPhoto' : IDL.Func([IDL.Text, ExternalBlob], [PrydoIdWithPhoto], []),
+  });
+};
 
 export const init = ({ IDL }) => { return []; };

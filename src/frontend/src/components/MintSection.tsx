@@ -1,3 +1,4 @@
+import { ExternalBlob } from "@/backend";
 import {
   CheckCircle2,
   Crown,
@@ -15,6 +16,11 @@ import {
 import { AnimatePresence, motion } from "motion/react";
 import { useCallback, useRef, useState } from "react";
 import { useWallet } from "../context/WalletContext";
+import { useActor } from "../hooks/useActor";
+import { RandomAvatarPreview } from "./AvatarBuilder";
+
+// TODO: Replace with deployed Soulbound NFT contract address on Polygon
+const PRYDO_NFT_CONTRACT = "0x0000000000000000000000000000000000000000";
 
 type LocalIdentityType = "real-face" | "avatar" | null;
 type MintState = "idle" | "confirming" | "minting" | "success";
@@ -23,7 +29,7 @@ const tiers = [
   {
     id: "genesis",
     badge: "GENESIS",
-    name: "Genesis Pride ID",
+    name: "Genesis Prydo ID",
     subtitle: "For early pioneers of the Prydo ecosystem",
     tierLabel: "GOLD TIER",
     icon: Crown,
@@ -47,7 +53,7 @@ const tiers = [
   {
     id: "early",
     badge: "EARLY MEMBER",
-    name: "Early Member Pride ID",
+    name: "Early Member Prydo ID",
     subtitle: "For early adopters joining Prydo",
     tierLabel: "SILVER TIER",
     icon: Star,
@@ -71,7 +77,7 @@ const tiers = [
   {
     id: "basic",
     badge: "BASIC",
-    name: "Basic Pride ID",
+    name: "Basic Prydo ID",
     subtitle: "Open membership for everyone",
     tierLabel: "BRONZE TIER",
     icon: Shield,
@@ -278,11 +284,17 @@ function MintConfirmModal({
   onConfirm,
   onCancel,
   mintState,
+  mintError,
+  mintStep,
+  icpStored,
 }: {
   identityType: LocalIdentityType;
   onConfirm: () => void;
   onCancel: () => void;
   mintState: MintState;
+  mintError: string | null;
+  mintStep: "polygon" | "icp";
+  icpStored: boolean;
 }) {
   const { address } = useWallet();
   const shortAddress = address
@@ -320,7 +332,7 @@ function MintConfirmModal({
           </h3>
           <p className="text-white/60 text-sm mb-1">
             Your Prydo Genesis ID has been successfully minted as a Soulbound
-            NFT on the Base chain.
+            Soulbound NFT on Polygon.
           </p>
           <p className="text-white/40 text-xs mb-6 font-mono">{shortAddress}</p>
           <div className="flex gap-2 mb-4">
@@ -365,9 +377,26 @@ function MintConfirmModal({
               <p className="text-[10px] text-white/40 uppercase tracking-widest">
                 Chain
               </p>
-              <p className="text-white text-xs font-bold mt-0.5">Base</p>
+              <p className="text-white text-xs font-bold mt-0.5">Polygon</p>
             </div>
           </div>
+          {icpStored && (
+            <div
+              className="flex items-center justify-center gap-2 py-2 px-3 rounded-xl mb-4"
+              style={{
+                background: "rgba(41,171,226,0.12)",
+                border: "1px solid rgba(41,171,226,0.3)",
+              }}
+            >
+              <span
+                className="w-2 h-2 rounded-full bg-cyan-400"
+                style={{ boxShadow: "0 0 6px #29ABE2" }}
+              />
+              <span className="text-cyan-400 text-xs font-bold tracking-wide">
+                Stored on ICP ✓
+              </span>
+            </div>
+          )}
           <button
             type="button"
             onClick={onCancel}
@@ -452,7 +481,7 @@ function MintConfirmModal({
           </div>
           <div className="flex justify-between text-xs">
             <span className="text-white/50">Blockchain</span>
-            <span className="text-white font-semibold">Base</span>
+            <span className="text-white font-semibold">Polygon</span>
           </div>
           <div className="flex justify-between text-xs">
             <span className="text-white/50">Cost</span>
@@ -471,7 +500,30 @@ function MintConfirmModal({
               className="w-8 h-8 animate-spin"
               style={{ color: "#F5C84C" }}
             />
-            <p className="text-white/60 text-sm">Minting on Base chain...</p>
+            <div className="flex flex-col items-center gap-1">
+              <p className="text-white/60 text-sm">
+                {mintStep === "polygon"
+                  ? "Minting on Polygon..."
+                  : "Storing on ICP..."}
+              </p>
+              <div className="flex items-center gap-2 text-xs text-white/30 mt-1">
+                <span
+                  className={
+                    mintStep === "icp" ? "text-green-400" : "text-white/30"
+                  }
+                >
+                  {mintStep === "icp" ? "✓ Minted on Polygon" : "⏳ Polygon"}
+                </span>
+                <span className="text-white/20">→</span>
+                <span
+                  className={
+                    mintStep === "icp" ? "text-cyan-400" : "text-white/20"
+                  }
+                >
+                  ICP
+                </span>
+              </div>
+            </div>
           </div>
         ) : (
           <div className="flex gap-3">
@@ -496,6 +548,11 @@ function MintConfirmModal({
             </button>
           </div>
         )}
+        {mintError && (
+          <p className="text-red-400 text-xs text-center mt-3 px-2">
+            {mintError}
+          </p>
+        )}
       </motion.div>
     </div>
   );
@@ -508,8 +565,18 @@ export default function MintSection() {
   const [showConfirm, setShowConfirm] = useState(false);
   const [faceImageFile, setFaceImageFile] = useState<File | null>(null);
   const [facePreviewUrl, setFacePreviewUrl] = useState<string | null>(null);
-  const { address, openModal, hasMinted, setHasMinted, setIdentityType } =
-    useWallet();
+  const [mintError, setMintError] = useState<string | null>(null);
+  const [mintStep, setMintStep] = useState<"polygon" | "icp">("polygon");
+  const [icpStored, setIcpStored] = useState(false);
+  const { actor } = useActor();
+  const {
+    address,
+    openModal,
+    hasMinted,
+    setHasMinted,
+    setIdentityType,
+    setFaceImageUrl,
+  } = useWallet();
 
   const handleFaceFileChange = (file: File) => {
     if (facePreviewUrl) URL.revokeObjectURL(facePreviewUrl);
@@ -544,11 +611,69 @@ export default function MintSection() {
   };
 
   const handleConfirmMint = async () => {
+    if (!(window as any).ethereum) {
+      alert(
+        "No Web3 wallet detected. Please install MetaMask or Trust Wallet.",
+      );
+      return;
+    }
+    setMintError(null);
+    setMintStep("polygon");
+    setIcpStored(false);
     setMintState("minting");
-    await new Promise((r) => setTimeout(r, 2500));
-    setMintState("success");
-    setHasMinted(true);
-    setIdentityType(identityType === "real-face" ? "realface" : "avatar");
+    try {
+      await (window as any).ethereum.request({
+        method: "eth_sendTransaction",
+        params: [
+          {
+            from: address,
+            to: PRYDO_NFT_CONTRACT,
+            data: "0x",
+            value: "0x0",
+          },
+        ],
+      });
+
+      // Polygon tx succeeded — now store on ICP
+      setMintStep("icp");
+      let photoBlob: ExternalBlob | null = null;
+      if (identityType === "real-face" && faceImageFile) {
+        try {
+          const bytes = await faceImageFile.arrayBuffer();
+          photoBlob = ExternalBlob.fromBytes(new Uint8Array(bytes));
+        } catch {
+          // ignore photo conversion error
+        }
+      }
+      try {
+        await actor?.mintId(
+          address ?? "",
+          "genesis",
+          identityType === "real-face" ? "realface" : "avatar",
+          photoBlob,
+        );
+        setIcpStored(true);
+      } catch (icpErr) {
+        console.error("ICP store failed:", icpErr);
+        // Don't block success — Polygon mint already happened
+      }
+
+      setMintState("success");
+      setHasMinted(true);
+      setIdentityType(identityType === "real-face" ? "realface" : "avatar");
+      if (identityType === "real-face" && faceImageFile) {
+        const reader = new FileReader();
+        reader.onload = (e) => {
+          setFaceImageUrl((e.target?.result as string) ?? null);
+        };
+        reader.readAsDataURL(faceImageFile);
+      } else {
+        setFaceImageUrl(null);
+      }
+    } catch (err: any) {
+      setMintState("idle");
+      setMintError(err?.message ?? "Transaction failed. Please try again.");
+    }
   };
 
   const handleCloseConfirm = () => {
@@ -599,13 +724,13 @@ export default function MintSection() {
           className="text-center mb-10"
         >
           <p className="text-xs font-bold tracking-[0.3em] text-pride-gradient uppercase mb-3">
-            Pride ID NFTs
+            Prydo ID NFTs
           </p>
           <h2 className="font-display font-bold text-4xl sm:text-5xl text-white tracking-wide uppercase">
-            Mint Your Pride ID
+            Mint Your Prydo ID
           </h2>
           <p className="text-white/60 mt-4 max-w-xl mx-auto">
-            Your Pride ID is a unique on-chain identity NFT that represents your
+            Your Prydo ID is a unique on-chain identity NFT that represents your
             membership in the Prydo ecosystem.
           </p>
         </motion.div>
@@ -753,6 +878,49 @@ export default function MintSection() {
                 onFileChange={handleFaceFileChange}
                 onRemove={handleFaceRemove}
               />
+            )}
+          </AnimatePresence>
+          {/* Avatar Identity Panel */}
+          <AnimatePresence>
+            {identityType === "avatar" && (
+              <motion.div
+                initial={{ opacity: 0, height: 0 }}
+                animate={{ opacity: 1, height: "auto" }}
+                exit={{ opacity: 0, height: 0 }}
+                transition={{ duration: 0.4, ease: "easeInOut" }}
+                style={{ overflow: "hidden" }}
+              >
+                <div
+                  className="rounded-2xl p-6 mt-4"
+                  style={{
+                    background: "rgba(255,79,216,0.04)",
+                    border: "1px solid rgba(255,79,216,0.25)",
+                    boxShadow: "0 4px 30px rgba(255,79,216,0.08)",
+                  }}
+                >
+                  <div className="text-center mb-5">
+                    <h4 className="font-display font-bold text-white text-base mb-1">
+                      ✦ Your Generative Prydo Avatar
+                    </h4>
+                    <p className="text-white/50 text-xs leading-relaxed max-w-[340px] mx-auto">
+                      Every mint generates a unique avatar from 50+ trait
+                      combinations. Preview a random avatar below.
+                    </p>
+                  </div>
+                  <RandomAvatarPreview />
+                  <div
+                    className="mt-5 px-4 py-2.5 rounded-xl text-center text-[11px]"
+                    style={{
+                      background: "rgba(245,200,76,0.08)",
+                      border: "1px solid rgba(245,200,76,0.2)",
+                      color: "rgba(245,200,76,0.85)",
+                    }}
+                  >
+                    ✦ Genesis avatars have boosted Legendary / Mythic trait
+                    rates
+                  </div>
+                </div>
+              </motion.div>
             )}
           </AnimatePresence>
 
@@ -986,6 +1154,9 @@ export default function MintSection() {
           onConfirm={handleConfirmMint}
           onCancel={handleCloseConfirm}
           mintState={mintState}
+          mintError={mintError}
+          mintStep={mintStep}
+          icpStored={icpStored}
         />
       )}
 

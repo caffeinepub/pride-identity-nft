@@ -10,7 +10,7 @@ const features = [
   {
     icon: Lock,
     title: "Non-Transferable",
-    desc: "Soulbound NFTs cannot be sold or transferred. Your Pride ID is yours forever — a permanent mark of who you are.",
+    desc: "Soulbound NFTs cannot be sold or transferred. Your Prydo ID is yours forever — a permanent mark of who you are.",
     color: "#FF4FD8",
   },
   {
@@ -22,7 +22,7 @@ const features = [
   {
     icon: Sparkles,
     title: "Unique",
-    desc: "Each Pride ID is algorithmically unique, generated with rarity traits that make your identity one-of-a-kind.",
+    desc: "Each Prydo ID is algorithmically unique, generated with rarity traits that make your identity one-of-a-kind.",
     color: "#22D3EE",
   },
 ];
@@ -66,7 +66,7 @@ export default function AboutSection() {
             community through decentralized identity and digital ownership. With
             Prydo ID, users can mint a unique on-chain identity that represents
             their digital presence, community membership, and reputation. Each
-            Pride ID is a Soulbound NFT that cannot be transferred, ensuring
+            Prydo ID is a Soulbound NFT that cannot be transferred, ensuring
             authentic identity and community trust.
           </p>
         </motion.div>
@@ -109,7 +109,7 @@ export default function AboutSection() {
         >
           <div className="flex-1">
             <h3 className="font-display font-bold text-2xl text-white mb-6">
-              Why Mint a Pride ID?
+              Why Mint a Prydo ID?
             </h3>
             <ul className="flex flex-col gap-4">
               {benefits.map((b) => (
@@ -132,7 +132,7 @@ export default function AboutSection() {
                 P
               </div>
               <p className="font-display font-bold text-white text-lg">
-                Your Pride.
+                Your Prydo.
               </p>
               <p className="text-white/60 text-sm">
                 Your Identity. Your Chain.

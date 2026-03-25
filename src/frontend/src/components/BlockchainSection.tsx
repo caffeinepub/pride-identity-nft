@@ -29,10 +29,10 @@ const features = [
   {
     icon: Network,
     title: "Decentralized Data Storage",
-    desc: "No central authority controls your data. True decentralization via Internet Computer.",
+    desc: "No central authority controls your data. True decentralization via Internet Computer Protocol (ICP).",
     color: "#FF4FD8",
     stat: "ICP",
-    statLabel: "Blockchain",
+    statLabel: "Hosting",
   },
 ];
 
@@ -54,8 +54,9 @@ export default function BlockchainSection() {
             Built on the Blockchain
           </h2>
           <p className="text-white/60 mt-4 max-w-xl mx-auto">
-            Powered by the Internet Computer Protocol — delivering true
-            decentralization, maximum security, and unstoppable identity.
+            Powered by Polygon for NFTs, ICP for decentralized hosting, and IPFS
+            for storage — delivering true decentralization, maximum security,
+            and unstoppable identity.
           </p>
         </motion.div>
 

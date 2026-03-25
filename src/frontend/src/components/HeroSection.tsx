@@ -43,12 +43,12 @@ export default function HeroSection() {
             <div className="flex items-center gap-3">
               <div className="h-px w-12 pride-gradient-bg" />
               <span className="text-xs font-bold tracking-[0.25em] uppercase text-pride-gradient font-display">
-                Pride Identity
+                Prydo Identity
               </span>
             </div>
 
             <h1 className="font-display font-extrabold text-5xl sm:text-6xl xl:text-7xl text-white leading-[1.05] tracking-tight">
-              Pride.
+              Prydo.
               <br />
               <span className="text-pride-gradient">Power.</span>
               <br />
@@ -60,7 +60,7 @@ export default function HeroSection() {
             </p>
 
             <p className="text-base text-white/60 leading-relaxed max-w-xl">
-              Mint your Pride ID and become part of a global Web3 community
+              Mint your Prydo ID and become part of a global Web3 community
               empowering LGBTQ+ voices.
             </p>
 
@@ -69,8 +69,13 @@ export default function HeroSection() {
                 type="button"
                 className="px-8 py-3.5 rounded-full text-white font-bold text-base tracking-wide btn-gradient transition-all hover:scale-105"
                 data-ocid="hero.primary_button"
+                onClick={() => {
+                  document
+                    .getElementById("mint")
+                    ?.scrollIntoView({ behavior: "smooth" });
+                }}
               >
-                Mint Pride ID
+                Mint Prydo ID
               </button>
               <button
                 type="button"
@@ -89,7 +94,7 @@ export default function HeroSection() {
 
             <div className="flex gap-8 mt-4 pt-4 border-t border-white/10">
               {[
-                { value: "10K+", label: "Pride IDs" },
+                { value: "10K+", label: "Prydo IDs" },
                 { value: "4", label: "Tiers" },
                 { value: "100%", label: "Soulbound" },
               ].map((stat) => (
@@ -132,7 +137,7 @@ export default function HeroSection() {
                 >
                   <img
                     src="/assets/generated/hero-pride-badge.dim_600x600.png"
-                    alt="Pride Identity NFT Badge"
+                    alt="Prydo Identity NFT Badge"
                     className="w-full h-full object-cover rounded-2xl"
                     loading="eager"
                   />

@@ -1,4 +1,10 @@
-import { createContext, useCallback, useContext, useState } from "react";
+import {
+  createContext,
+  useCallback,
+  useContext,
+  useEffect,
+  useState,
+} from "react";
 
 export type WalletType = "metamask" | "trust" | "walletconnect" | null;
 export type IdentityType = "avatar" | "realface" | null;
@@ -10,7 +16,10 @@ interface WalletContextValue {
   isModalOpen: boolean;
   hasMinted: boolean;
   identityType: IdentityType;
+  faceImageUrl: string | null;
   isProfileOpen: boolean;
+  chainId: string | null;
+  isCorrectNetwork: boolean;
   openModal: () => void;
   closeModal: () => void;
   openProfile: () => void;
@@ -21,6 +30,8 @@ interface WalletContextValue {
   disconnect: () => void;
   setHasMinted: (v: boolean) => void;
   setIdentityType: (v: IdentityType) => void;
+  setFaceImageUrl: (v: string | null) => void;
+  switchToPolygon: () => Promise<void>;
   error: string | null;
 }
 
@@ -33,8 +44,12 @@ export function WalletProvider({ children }: { children: React.ReactNode }) {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [hasMinted, setHasMinted] = useState(false);
   const [identityType, setIdentityType] = useState<IdentityType>(null);
+  const [faceImageUrl, setFaceImageUrl] = useState<string | null>(null);
   const [isProfileOpen, setIsProfileOpen] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [chainId, setChainId] = useState<string | null>(null);
+
+  const isCorrectNetwork = chainId === "0x89";
 
   const openModal = () => {
     setError(null);
@@ -44,16 +59,56 @@ export function WalletProvider({ children }: { children: React.ReactNode }) {
   const openProfile = () => setIsProfileOpen(true);
   const closeProfile = () => setIsProfileOpen(false);
 
+  const getChainId = useCallback(async () => {
+    const win = window as any;
+    if (!win.ethereum) return;
+    const id = await win.ethereum.request({ method: "eth_chainId" });
+    setChainId(id);
+  }, []);
+
+  const switchToPolygon = useCallback(async () => {
+    const win = window as any;
+    if (!win.ethereum) return;
+    try {
+      await win.ethereum.request({
+        method: "wallet_switchEthereumChain",
+        params: [{ chainId: "0x89" }],
+      });
+    } catch (switchError: any) {
+      if (switchError.code === 4902) {
+        await win.ethereum.request({
+          method: "wallet_addEthereumChain",
+          params: [
+            {
+              chainId: "0x89",
+              chainName: "Polygon Mainnet",
+              nativeCurrency: { name: "MATIC", symbol: "MATIC", decimals: 18 },
+              rpcUrls: ["https://polygon-rpc.com"],
+              blockExplorerUrls: ["https://polygonscan.com"],
+            },
+          ],
+        });
+      }
+    }
+    await getChainId();
+  }, [getChainId]);
+
+  useEffect(() => {
+    const win = window as any;
+    if (!address || !win.ethereum) return;
+    const handler = (id: string) => setChainId(id);
+    win.ethereum.on("chainChanged", handler);
+    win.ethereum
+      .request({ method: "eth_chainId" })
+      .then((id: string) => setChainId(id));
+    return () => win.ethereum.removeListener("chainChanged", handler);
+  }, [address]);
+
   const connectMetaMask = useCallback(async () => {
     setError(null);
     setIsConnecting(true);
     try {
-      const win = window as Window & {
-        ethereum?: {
-          request: (args: { method: string }) => Promise<string[]>;
-          isMetaMask?: boolean;
-        };
-      };
+      const win = window as any;
       if (!win.ethereum) {
         window.open("https://metamask.io/download/", "_blank");
         throw new Error(
@@ -67,6 +122,7 @@ export function WalletProvider({ children }: { children: React.ReactNode }) {
         setAddress(accounts[0]);
         setWalletType("metamask");
         setIsModalOpen(false);
+        await switchToPolygon();
       }
     } catch (e: unknown) {
       const msg = e instanceof Error ? e.message : "Connection failed";
@@ -74,21 +130,13 @@ export function WalletProvider({ children }: { children: React.ReactNode }) {
     } finally {
       setIsConnecting(false);
     }
-  }, []);
+  }, [switchToPolygon]);
 
   const connectTrust = useCallback(async () => {
     setError(null);
     setIsConnecting(true);
     try {
-      const win = window as Window & {
-        trustwallet?: {
-          request: (args: { method: string }) => Promise<string[]>;
-        };
-        ethereum?: {
-          request: (args: { method: string }) => Promise<string[]>;
-          isTrust?: boolean;
-        };
-      };
+      const win = window as any;
       const provider =
         win.trustwallet || (win.ethereum?.isTrust ? win.ethereum : null);
       if (!provider) {
@@ -102,6 +150,7 @@ export function WalletProvider({ children }: { children: React.ReactNode }) {
         setAddress(accounts[0]);
         setWalletType("trust");
         setIsModalOpen(false);
+        await switchToPolygon();
       }
     } catch (e: unknown) {
       const msg = e instanceof Error ? e.message : "Connection failed";
@@ -109,7 +158,7 @@ export function WalletProvider({ children }: { children: React.ReactNode }) {
     } finally {
       setIsConnecting(false);
     }
-  }, []);
+  }, [switchToPolygon]);
 
   const connectWalletConnect = useCallback(async () => {
     setError(null);
@@ -122,6 +171,8 @@ export function WalletProvider({ children }: { children: React.ReactNode }) {
     setWalletType("walletconnect");
     setIsModalOpen(false);
     setIsConnecting(false);
+    // WalletConnect mock — set Polygon chain directly
+    setChainId("0x89");
   }, []);
 
   const disconnect = useCallback(() => {
@@ -129,7 +180,9 @@ export function WalletProvider({ children }: { children: React.ReactNode }) {
     setWalletType(null);
     setHasMinted(false);
     setIdentityType(null);
+    setFaceImageUrl(null);
     setIsProfileOpen(false);
+    setChainId(null);
   }, []);
 
   return (
@@ -141,7 +194,10 @@ export function WalletProvider({ children }: { children: React.ReactNode }) {
         isModalOpen,
         hasMinted,
         identityType,
+        faceImageUrl,
         isProfileOpen,
+        chainId,
+        isCorrectNetwork,
         openModal,
         closeModal,
         openProfile,
@@ -152,6 +208,8 @@ export function WalletProvider({ children }: { children: React.ReactNode }) {
         disconnect,
         setHasMinted,
         setIdentityType,
+        setFaceImageUrl,
+        switchToPolygon,
         error,
       }}
     >

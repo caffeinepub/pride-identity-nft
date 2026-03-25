@@ -8,9 +8,9 @@ import { motion } from "motion/react";
 
 const faqs = [
   {
-    id: "what-is-pride-id",
-    q: "What is a Pride ID?",
-    a: "Pride ID is a Soulbound NFT that represents your decentralized identity in the Prydo ecosystem.",
+    id: "what-is-prydo-id",
+    q: "What is a Prydo ID?",
+    a: "Prydo ID is a Soulbound NFT that represents your decentralized identity in the Prydo ecosystem.",
   },
   {
     id: "soulbound-nft",
@@ -19,12 +19,12 @@ const faqs = [
   },
   {
     id: "transfer",
-    q: "Can I sell my Pride ID?",
-    a: "No. Pride IDs are Soulbound NFTs and cannot be transferred or sold. Your identity is yours permanently.",
+    q: "Can I sell my Prydo ID?",
+    a: "No. Prydo IDs are Soulbound NFTs and cannot be transferred or sold. Your identity is yours permanently.",
   },
   {
     id: "why-mint",
-    q: "Why mint a Pride ID?",
+    q: "Why mint a Prydo ID?",
     a: "To participate in the Prydo ecosystem, build your on-chain identity, access community features, and be part of a global LGBTQ+ Web3 movement.",
   },
 ];
@@ -47,7 +47,7 @@ export default function FAQSection() {
             Frequently Asked Questions
           </h2>
           <p className="text-white/50 mt-4 max-w-xl mx-auto">
-            Everything you need to know about Pride ID and the Prydo ecosystem.
+            Everything you need to know about Prydo ID and the Prydo ecosystem.
           </p>
         </motion.div>
 

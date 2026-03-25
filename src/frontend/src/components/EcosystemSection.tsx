@@ -23,7 +23,7 @@ const ecosystemItems = [
   {
     icon: Vote,
     title: "DAO Governance",
-    desc: "Pride ID holders vote on proposals, shaping the future of the ecosystem democratically.",
+    desc: "Prydo ID holders vote on proposals, shaping the future of the ecosystem democratically.",
     color: "#34D399",
   },
   {
@@ -34,8 +34,8 @@ const ecosystemItems = [
   },
   {
     icon: Globe,
-    title: "Pride Events",
-    desc: "Virtual and real-world Pride events powered by your on-chain identity and community membership.",
+    title: "Prydo Events",
+    desc: "Virtual and real-world Prydo events powered by your on-chain identity and community membership.",
     color: "#FB7185",
   },
 ];

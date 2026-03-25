@@ -1,5 +1,6 @@
+import type { PrydoIdWithPhoto } from "@/backend";
+import { Skeleton } from "@/components/ui/skeleton";
 import {
-  CheckCircle2,
   Crown,
   ExternalLink,
   Hexagon,
@@ -10,7 +11,12 @@ import {
   X,
 } from "lucide-react";
 import { AnimatePresence, motion } from "motion/react";
+import { useEffect, useState } from "react";
 import { useWallet } from "../context/WalletContext";
+import { useActor } from "../hooks/useActor";
+import { generateTraits } from "./AvatarBuilder";
+import AvatarBuilder from "./AvatarBuilder";
+import NFTCard, { type NFTRarity } from "./NFTCard";
 
 const walletLabels: Record<string, string> = {
   metamask: "MetaMask",
@@ -24,6 +30,32 @@ const walletColors: Record<string, string> = {
   walletconnect: "#3B99FC",
 };
 
+function simpleHash(str: string): number {
+  let h = 0;
+  for (let i = 0; i < str.length; i++) {
+    h = ((h << 5) - h + str.charCodeAt(i)) | 0;
+  }
+  return Math.abs(h);
+}
+
+const RARITY_NFT_TYPE: Record<string, NFTRarity> = {
+  Mythic: "mythic",
+  Legendary: "legendary",
+  Epic: "epic",
+  Rare: "rare",
+  Uncommon: "uncommon",
+  Common: "common",
+};
+
+const RARITY_SCORES: Record<string, number> = {
+  Mythic: 96,
+  Legendary: 88,
+  Epic: 72,
+  Rare: 55,
+  Uncommon: 38,
+  Common: 18,
+};
+
 export default function ProfilePanel() {
   const {
     address,
@@ -33,6 +65,22 @@ export default function ProfilePanel() {
     isProfileOpen,
     closeProfile,
   } = useWallet();
+
+  const [onChainRecord, setOnChainRecord] = useState<PrydoIdWithPhoto | null>(
+    null,
+  );
+  const [isFetchingOnChain, setIsFetchingOnChain] = useState(false);
+  const { actor } = useActor();
+
+  useEffect(() => {
+    if (!address || !isProfileOpen || !actor) return;
+    setIsFetchingOnChain(true);
+    actor
+      .getIdByWallet(address)
+      .then((rec) => setOnChainRecord(rec))
+      .catch(() => setOnChainRecord(null))
+      .finally(() => setIsFetchingOnChain(false));
+  }, [address, isProfileOpen, actor]);
 
   const shortAddress = address
     ? `${address.slice(0, 6)}...${address.slice(-4)}`
@@ -51,7 +99,6 @@ export default function ProfilePanel() {
     <AnimatePresence>
       {isProfileOpen && (
         <>
-          {/* Backdrop */}
           <motion.div
             key="profile-backdrop"
             initial={{ opacity: 0 }}
@@ -66,7 +113,6 @@ export default function ProfilePanel() {
             onClick={closeProfile}
           />
 
-          {/* Slide-in panel */}
           <motion.aside
             key="profile-panel"
             initial={{ x: "100%", opacity: 0 }}
@@ -98,7 +144,7 @@ export default function ProfilePanel() {
                   <User className="w-4 h-4" style={{ color: "#8B5CF6" }} />
                 </div>
                 <h2 className="font-display font-bold text-white text-lg tracking-wide">
-                  My Pride ID
+                  My Prydo ID
                 </h2>
               </div>
               <button
@@ -157,16 +203,23 @@ export default function ProfilePanel() {
                         className="w-1.5 h-1.5 rounded-full bg-green-400"
                         style={{ boxShadow: "0 0 5px #22C55E" }}
                       />
-                      <span className="text-white/40 text-xs">Base Chain</span>
+                      <span className="text-white/40 text-xs">
+                        Polygon Chain
+                      </span>
                     </div>
                   </div>
                   <ExternalLink className="w-3.5 h-3.5 text-white/25 flex-shrink-0" />
                 </div>
               </div>
 
-              {/* Pride ID Status */}
+              {/* Prydo ID Status */}
               {hasMinted ? (
-                <MintedCard identityType={identityType} />
+                <MintedCard
+                  identityType={identityType}
+                  address={address}
+                  onChainRecord={onChainRecord}
+                  isFetchingOnChain={isFetchingOnChain}
+                />
               ) : (
                 <EmptyState onMintClick={handleMintCTA} />
               )}
@@ -242,120 +295,130 @@ export default function ProfilePanel() {
 
 function MintedCard({
   identityType,
+  address,
+  onChainRecord,
+  isFetchingOnChain,
 }: {
   identityType: "avatar" | "realface" | null;
+  address: string | null;
+  onChainRecord: PrydoIdWithPhoto | null;
+  isFetchingOnChain: boolean;
 }) {
+  const { faceImageUrl } = useWallet();
+  const onChainPhotoUrl = onChainRecord?.photo?.getDirectURL() ?? null;
+  const mintedAt = onChainRecord?.idRecord?.timestamp
+    ? new Date(
+        Number(onChainRecord.idRecord.timestamp) / 1_000_000,
+      ).toLocaleDateString("en-US", {
+        year: "numeric",
+        month: "short",
+        day: "numeric",
+      })
+    : null;
+  const seed = address ?? "genesis-default";
+  const traits = generateTraits(seed, true);
+  const nftRarity: NFTRarity = RARITY_NFT_TYPE[traits.rarity] ?? "legendary";
+  const rarityScore = RARITY_SCORES[traits.rarity] ?? 88;
+  const tokenNum = `#${String((simpleHash(seed) % 100) + 1).padStart(4, "0")}`;
+
+  const faceUrl = onChainPhotoUrl ?? faceImageUrl;
+
+  const artNode =
+    identityType === "avatar" ? (
+      <AvatarBuilder seed={seed} size={200} isGenesis={true} />
+    ) : identityType === "realface" && faceUrl ? (
+      <div
+        style={{
+          width: "200px",
+          height: "250px",
+          overflow: "hidden",
+          borderRadius: "8px",
+        }}
+      >
+        <img
+          src={faceUrl}
+          alt="Face Identity"
+          style={{ width: "100%", height: "100%", objectFit: "cover" }}
+        />
+      </div>
+    ) : (
+      <div
+        style={{
+          width: "200px",
+          height: "250px",
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+          background:
+            "linear-gradient(135deg, rgba(245,200,76,0.2), rgba(245,200,76,0.05))",
+        }}
+      >
+        <Hexagon style={{ width: "64px", height: "64px", color: "#F5C84C" }} />
+      </div>
+    );
+
+  if (isFetchingOnChain) {
+    return (
+      <motion.div
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        className="flex flex-col gap-3"
+      >
+        <Skeleton
+          className="h-64 w-full rounded-2xl"
+          style={{ background: "rgba(255,255,255,0.06)" }}
+        />
+        <Skeleton
+          className="h-4 w-1/2 rounded-full"
+          style={{ background: "rgba(255,255,255,0.04)" }}
+        />
+      </motion.div>
+    );
+  }
+
   return (
     <motion.div
       initial={{ opacity: 0, y: 12 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ delay: 0.15 }}
-      className="rounded-2xl p-5 relative overflow-hidden"
-      style={{
-        background:
-          "linear-gradient(135deg, rgba(245,200,76,0.1), rgba(10,5,25,0.9))",
-        border: "2px solid rgba(245,200,76,0.45)",
-        boxShadow: "0 0 40px rgba(245,200,76,0.15)",
-      }}
+      className="flex flex-col gap-3"
     >
-      {/* Gold shimmer accent */}
-      <div
-        className="absolute top-0 right-0 w-32 h-32 rounded-full opacity-20 pointer-events-none"
-        style={{
-          background: "radial-gradient(circle, #F5C84C 0%, transparent 70%)",
-          filter: "blur(20px)",
-          transform: "translate(20%, -20%)",
-        }}
-      />
-
-      {/* Active badge */}
-      <div className="flex items-center justify-between mb-4">
-        <span
-          className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[10px] font-bold tracking-wider"
-          style={{
-            background: "rgba(245,200,76,0.15)",
-            color: "#F5C84C",
-            border: "1px solid rgba(245,200,76,0.35)",
-          }}
-        >
-          <Crown className="w-2.5 h-2.5" />
-          Genesis Pride ID
-        </span>
-        <span
-          className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[10px] font-bold tracking-wider"
-          style={{
-            background: "rgba(34,197,94,0.12)",
-            color: "#22C55E",
-            border: "1px solid rgba(34,197,94,0.3)",
-          }}
-        >
-          <span
-            className="w-1.5 h-1.5 rounded-full bg-green-400"
-            style={{ boxShadow: "0 0 5px #22C55E" }}
-          />
-          Active
-        </span>
-      </div>
-
-      {/* Token ID + Identity */}
-      <div className="flex items-center gap-3 mb-4">
-        <div
-          className="w-14 h-14 rounded-2xl flex items-center justify-center flex-shrink-0 relative"
-          style={{
-            background:
-              "linear-gradient(135deg, rgba(245,200,76,0.2), rgba(245,200,76,0.05))",
-            border: "2px solid rgba(245,200,76,0.4)",
-          }}
-        >
-          <Hexagon className="w-7 h-7" style={{ color: "#F5C84C" }} />
-          <CheckCircle2
-            className="w-4 h-4 absolute -bottom-1 -right-1"
-            style={{
-              color: "#22C55E",
-              background: "#0a0515",
-              borderRadius: "50%",
-            }}
-          />
-        </div>
-        <div>
-          <p
-            className="font-display font-extrabold text-xl tracking-widest"
-            style={{ color: "#F5C84C" }}
-          >
-            PRYDO #0001
-          </p>
-          <p className="text-white/55 text-xs mt-0.5">
-            {identityType === "realface"
-              ? "Real Face Identity"
-              : "Avatar Identity"}
-          </p>
-        </div>
-      </div>
-
-      {/* Metadata grid */}
-      <div className="grid grid-cols-3 gap-2">
-        {[
-          { label: "Tier", value: "Genesis", color: "#F5C84C" },
-          { label: "Chain", value: "Base", color: "#FFFFFF" },
-          { label: "Status", value: "Soulbound", color: "#8B5CF6" },
-        ].map(({ label, value, color }) => (
+      {onChainRecord && (
+        <div className="flex items-center justify-between">
           <div
-            key={label}
-            className="rounded-xl p-2.5 text-center"
+            className="flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-bold"
             style={{
-              background: "rgba(0,0,0,0.3)",
-              border: "1px solid rgba(255,255,255,0.07)",
+              background: "rgba(41,171,226,0.15)",
+              border: "1px solid rgba(41,171,226,0.4)",
+              color: "#29ABE2",
             }}
           >
-            <p className="text-white/35 text-[9px] uppercase tracking-wider">
-              {label}
-            </p>
-            <p className="font-bold text-xs mt-0.5" style={{ color }}>
-              {value}
-            </p>
+            <span
+              className="w-1.5 h-1.5 rounded-full bg-cyan-400"
+              style={{ boxShadow: "0 0 5px #29ABE2" }}
+            />
+            ICP On-Chain
           </div>
-        ))}
-      </div>
+          {mintedAt && (
+            <span className="text-white/30 text-[10px]">Minted {mintedAt}</span>
+          )}
+        </div>
+      )}
+      <NFTCard
+        name={
+          identityType === "realface"
+            ? "Real Face Identity"
+            : "Genesis Prydo ID"
+        }
+        number={tokenNum}
+        collection="PRYDO GENESIS"
+        rarity={nftRarity}
+        background={traits.background}
+        symbol={traits.identitySymbol}
+        character={identityType === "realface" ? "Verified" : traits.hairStyle}
+        rarityScore={rarityScore}
+        artContent={artNode}
+      />
     </motion.div>
   );
 }
@@ -383,10 +446,10 @@ function EmptyState({ onMintClick }: { onMintClick: () => void }) {
         <Hexagon className="w-8 h-8 text-white/20" />
       </div>
       <p className="font-display font-bold text-white text-sm mb-1">
-        No Pride ID Found
+        No Prydo ID Found
       </p>
       <p className="text-white/40 text-xs leading-relaxed mb-5">
-        You haven't minted a Pride ID yet. Mint your Genesis ID to establish
+        You haven't minted a Prydo ID yet. Mint your Genesis ID to establish
         your on-chain identity.
       </p>
       <button

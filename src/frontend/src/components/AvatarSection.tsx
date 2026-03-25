@@ -1,66 +1,56 @@
 import { motion, useInView } from "motion/react";
-import { useEffect, useRef, useState } from "react";
+import { useRef, useState } from "react";
+import NFTCard, { type NFTRarity } from "./NFTCard";
 
-const sampleAvatars = [
+const sampleNFTs: {
+  name: string;
+  number: string;
+  collection: string;
+  rarity: NFTRarity;
+  background: string;
+  symbol: string;
+  character: string;
+  rarityScore: number;
+}[] = [
   {
-    id: "nebula",
     name: "Cosmic Guardian",
-    img: "/assets/generated/avatar-1-nebula.dim_400x500.png",
-    rarity: "Epic",
-    rarityColor: "#8B5CF6",
+    number: "#007",
+    collection: "PRYDO GENESIS",
+    rarity: "epic",
+    background: "Cosmic Nebula",
+    symbol: "Rainbow Halo",
+    character: "Non-Binary",
     rarityScore: 78,
-    traits: [
-      { label: "Background", value: "Cosmic Nebula" },
-      { label: "Symbol", value: "Rainbow Halo" },
-      { label: "Character", value: "Non-Binary" },
-      { label: "Accessory", value: "Neon Crown" },
-      { label: "Rare Trait", value: "Galaxy Aura" },
-    ],
   },
   {
-    id: "rainbow",
-    name: "Pride Warrior",
-    img: "/assets/generated/avatar-2-rainbow.dim_400x500.png",
-    rarity: "Rare",
-    rarityColor: "#22D3EE",
+    name: "Prydo Warrior",
+    number: "#023",
+    collection: "PRYDO GENESIS",
+    rarity: "rare",
+    background: "Rainbow Gradient",
+    symbol: "Prydo Flag",
+    character: "Queer Hero",
     rarityScore: 62,
-    traits: [
-      { label: "Background", value: "Rainbow Gradient" },
-      { label: "Symbol", value: "Pride Flag" },
-      { label: "Character", value: "Queer Hero" },
-      { label: "Accessory", value: "Star Cluster" },
-      { label: "Rare Trait", value: "Aurora Aura" },
-    ],
   },
   {
-    id: "golden",
     name: "Golden Legend",
-    img: "/assets/generated/avatar-3-golden.dim_400x500.png",
-    rarity: "Legendary",
-    rarityColor: "#F5C84C",
+    number: "#001",
+    collection: "PRYDO GENESIS",
+    rarity: "legendary",
+    background: "Golden Sunset",
+    symbol: "Solar Infinity",
+    character: "Guardian",
     rarityScore: 91,
-    traits: [
-      { label: "Background", value: "Golden Sunset" },
-      { label: "Symbol", value: "Solar Infinity" },
-      { label: "Character", value: "Guardian" },
-      { label: "Accessory", value: "Diamond Crown" },
-      { label: "Rare Trait", value: "Butterfly Wings" },
-    ],
   },
   {
-    id: "galaxy",
     name: "Mythic Transcendent",
-    img: "/assets/generated/avatar-4-galaxy.dim_400x500.png",
-    rarity: "Mythic",
-    rarityColor: "#FF4FD8",
+    number: "#002",
+    collection: "PRYDO GENESIS",
+    rarity: "mythic",
+    background: "Galaxy Pink",
+    symbol: "Infinity Halo",
+    character: "Transcendent",
     rarityScore: 97,
-    traits: [
-      { label: "Background", value: "Galaxy Pink" },
-      { label: "Symbol", value: "Infinity Halo" },
-      { label: "Character", value: "Transcendent" },
-      { label: "Accessory", value: "Ethereal Wings" },
-      { label: "Rare Trait", value: "Pink Galaxy" },
-    ],
   },
 ];
 
@@ -118,34 +108,6 @@ function AnimatedBar({
         className="h-full rounded-full"
         style={{ background: color }}
       />
-    </div>
-  );
-}
-
-function RarityMeterBar({ score, color }: { score: number; color: string }) {
-  const ref = useRef<HTMLDivElement>(null);
-  const inView = useInView(ref, { once: true });
-  return (
-    <div className="mt-2">
-      <div className="flex justify-between items-center mb-1">
-        <span className="text-white/40 text-[10px]">Rarity Score</span>
-        <span className="text-[10px] font-bold" style={{ color }}>
-          {score}
-        </span>
-      </div>
-      <div
-        ref={ref}
-        className="rounded-full overflow-hidden"
-        style={{ background: "rgba(255,255,255,0.08)", height: "6px" }}
-      >
-        <motion.div
-          initial={{ width: 0 }}
-          animate={inView ? { width: `${score}%` } : { width: 0 }}
-          transition={{ duration: 1, ease: "easeOut" }}
-          className="h-full rounded-full"
-          style={{ background: color }}
-        />
-      </div>
     </div>
   );
 }
@@ -281,13 +243,13 @@ export default function AvatarSection() {
           className="text-center mb-12"
         >
           <p className="text-xs font-bold tracking-[0.3em] text-pride-gradient uppercase mb-3">
-            Pride Avatars
+            Prydo Avatars
           </p>
           <h2 className="font-display font-bold text-4xl sm:text-5xl text-white">
-            Your Unique Pride Avatar
+            Your Unique Prydo Avatar
           </h2>
           <p className="text-white/60 mt-4 max-w-2xl mx-auto">
-            Each Pride ID automatically generates a unique avatar using
+            Each Prydo ID automatically generates a unique avatar using
             algorithmic traits. Every avatar is unique and permanently stored on
             the blockchain.
           </p>
@@ -316,76 +278,23 @@ export default function AvatarSection() {
           ))}
         </motion.div>
 
-        {/* Avatar cards with rarity meters */}
-        <div className="grid grid-cols-2 lg:grid-cols-4 gap-5 mb-14">
-          {sampleAvatars.map((avatar, i) => (
-            <motion.div
-              key={avatar.id}
-              initial={{ opacity: 0, y: 30 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              viewport={{ once: true }}
-              transition={{ duration: 0.6, delay: i * 0.1 }}
-              className="rounded-2xl overflow-hidden group cursor-pointer hover:scale-[1.03] transition-transform"
-              style={{
-                border: `1px solid ${avatar.rarityColor}44`,
-                background: "rgba(10,5,25,0.8)",
-              }}
-              data-ocid={`avatars.item.${i + 1}`}
-            >
-              <div className="relative overflow-hidden">
-                <img
-                  src={avatar.img}
-                  alt={avatar.name}
-                  className="w-full object-cover"
-                  style={{ aspectRatio: "4/5" }}
-                  loading="lazy"
-                />
-                <div
-                  className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity"
-                  style={{
-                    background: `linear-gradient(to bottom, transparent 50%, ${avatar.rarityColor}22)`,
-                  }}
-                />
-              </div>
-              <div className="p-3">
-                <div className="flex items-center justify-between mb-2">
-                  <p className="text-white font-bold text-sm truncate">
-                    {avatar.name}
-                  </p>
-                  <span
-                    className="text-[10px] font-bold tracking-wider px-2 py-0.5 rounded-full"
-                    style={{
-                      background: `${avatar.rarityColor}22`,
-                      color: avatar.rarityColor,
-                      border: `1px solid ${avatar.rarityColor}44`,
-                    }}
-                  >
-                    {avatar.rarity}
-                  </span>
-                </div>
-                <div className="flex flex-col gap-1">
-                  {avatar.traits.slice(0, 3).map((trait) => (
-                    <div
-                      key={trait.label}
-                      className="flex justify-between gap-2"
-                    >
-                      <span className="text-white/40 text-[10px]">
-                        {trait.label}
-                      </span>
-                      <span className="text-white/70 text-[10px] font-medium truncate max-w-[100px]">
-                        {trait.value}
-                      </span>
-                    </div>
-                  ))}
-                </div>
-                {/* Rarity score meter */}
-                <RarityMeterBar
-                  score={avatar.rarityScore}
-                  color={avatar.rarityColor}
-                />
-              </div>
-            </motion.div>
-          ))}
+        {/* NFT Card Gallery */}
+        <div className="overflow-x-auto pb-4 mb-14">
+          <div className="grid grid-cols-2 lg:grid-cols-4 gap-5 min-w-[520px] lg:min-w-0">
+            {sampleNFTs.map((nft, i) => (
+              <motion.div
+                key={nft.name}
+                initial={{ opacity: 0, y: 30 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                viewport={{ once: true }}
+                transition={{ duration: 0.6, delay: i * 0.1 }}
+                className="hover:scale-[1.03] transition-transform cursor-pointer"
+                data-ocid={`avatars.item.${i + 1}`}
+              >
+                <NFTCard {...nft} />
+              </motion.div>
+            ))}
+          </div>
         </div>
 
         <motion.div

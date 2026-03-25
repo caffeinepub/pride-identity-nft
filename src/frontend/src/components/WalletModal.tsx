@@ -291,6 +291,31 @@ export default function WalletModal() {
           </a>
           .
         </p>
+
+        {/* Polygon note */}
+        <div
+          className="flex items-center justify-center gap-2 mt-3 py-2 px-3 rounded-lg"
+          style={{
+            background: "rgba(130,71,229,0.08)",
+            border: "1px solid rgba(130,71,229,0.2)",
+          }}
+        >
+          <svg
+            viewBox="0 0 38 33"
+            className="w-4 h-4 flex-shrink-0"
+            fill="none"
+            role="img"
+            aria-label="Polygon"
+          >
+            <title>Polygon</title>
+            <path d="M19 0L0 33h38L19 0z" fill="#8247E5" />
+          </svg>
+          <span className="text-white/50 text-[11px]">
+            Prydo NFTs live on{" "}
+            <span className="text-purple-400 font-medium">Polygon Mainnet</span>{" "}
+            (MATIC)
+          </span>
+        </div>
       </div>
     </div>
   );

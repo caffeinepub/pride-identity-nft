@@ -1,23 +1,40 @@
-# Pride Identity NFT
+# Prydo Identity NFT
 
 ## Current State
-- MintSection has two identity type selectors (Real Face / Avatar) as buttons with no additional UI after selection
-- AvatarSection shows 4 avatar cards with basic trait display and rarity badges, but no rarity graphics/charts
-- No face image upload functionality exists anywhere
+- Backend is empty (`actor {}`)
+- Frontend displays ICP and IPFS as tech stack badges only — no real backend integration
+- Minting is simulated (no on-chain data stored)
+- Face photo uploads are stored only in React state (lost on refresh)
 
 ## Requested Changes (Diff)
 
 ### Add
-- Real Face Identity: after selecting "Real Face Identity" in MintSection, show an expanded face upload panel below the selector with: drag-and-drop / click-to-upload image area, preview of uploaded face, privacy notice ("Your face is encrypted and stored privately on-chain. Only zk-proof is submitted."), upload status/confirmation state
-- Avatar Section: Add a rarity distribution chart/graphic per avatar showing trait rarity percentages visually (animated bar chart or rarity meter). Add overall rarity score for each avatar card. Add a full rarity breakdown panel that shows each trait tier distribution (Common, Uncommon, Rare, Epic, Legendary, Mythic) with color-coded bars and percentage fill.
+- Motoko backend actor with:
+  - `storePrydoID`: stores minted Prydo ID metadata (wallet address, tier, avatar type, timestamp) on ICP canister storage
+  - `getPrydoID`: retrieve a Prydo ID by wallet address
+  - `getAllPrydoIDs`: list all minted IDs (for community explorer)
+  - `storeIPFSHash`: store an IPFS CID associated with a wallet's Prydo ID (avatar/face metadata)
+  - `getIPFSHash`: retrieve IPFS CID for a wallet
+  - `getStats`: return total minted count and storage info
+- Frontend `ICPStorageService` — calls backend actor to persist mint data after Polygon tx
+- Frontend `IPFSUploadService` — uploads avatar/face metadata JSON to IPFS via web3.storage HTTP API (using http-outcalls from backend)
+- `DecentralizedStoragePanel` component — shows live ICP canister stats and IPFS CID for user's minted ID
+- Update `TechStackSection` to show live "On-Chain" badges once data is stored
+- Update `MintSection` to call ICP storage after successful mint
+- Update `ProfilePanel` to show IPFS CID and ICP storage status
 
 ### Modify
-- MintSection: Real Face card selector - when selected, expand to show face upload UI inline below the two cards
-- AvatarSection: Each avatar card gets a rarity score meter graphic; add a full rarity stats panel section at the bottom of the avatar section
+- `MintSection.tsx`: after `eth_sendTransaction`, also call `storePrydoID` on ICP backend and store IPFS hash
+- `ProfilePanel.tsx`: display ICP storage confirmation and IPFS CID for the minted ID
+- `TechStackSection.tsx`: add live status indicator (green dot + "Live" badge) for ICP and IPFS cards
 
 ### Remove
 - Nothing removed
 
 ## Implementation Plan
-1. In MintSection: add `faceImageFile` and `facePreview` state. When `identityType === 'real-face'` is selected, render an animated expand panel below the identity cards with a file input (accept image/*), drag-and-drop support, face preview with remove button, and a privacy badge.
-2. In AvatarSection: add rarity score (number 0-100) and rarity distribution data per avatar. Render an animated horizontal bar (rarity meter) inside each avatar card. Add a bottom section with a full rarity tier distribution chart showing supply breakdown by tier.
+1. Select `blob-storage` and `http-outcalls` components
+2. Generate Motoko backend with PrydoID storage map, IPFS hash map, stats query
+3. Update frontend to call backend actor methods after minting
+4. Add `DecentralizedStoragePanel` showing ICP canister ID, stored count, and user's IPFS CID
+5. Update ProfilePanel to show ICP + IPFS status
+6. Validate and deploy
