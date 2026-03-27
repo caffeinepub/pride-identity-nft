@@ -16,7 +16,7 @@ import { useWallet } from "../context/WalletContext";
 import { useActor } from "../hooks/useActor";
 import { generateTraits } from "./AvatarBuilder";
 import AvatarBuilder from "./AvatarBuilder";
-import NFTCard, { type NFTRarity } from "./NFTCard";
+import PrydoBadge from "./PrydoBadge";
 
 const walletLabels: Record<string, string> = {
   metamask: "MetaMask",
@@ -28,32 +28,6 @@ const walletColors: Record<string, string> = {
   metamask: "#F5841F",
   trust: "#3375BB",
   walletconnect: "#3B99FC",
-};
-
-function simpleHash(str: string): number {
-  let h = 0;
-  for (let i = 0; i < str.length; i++) {
-    h = ((h << 5) - h + str.charCodeAt(i)) | 0;
-  }
-  return Math.abs(h);
-}
-
-const RARITY_NFT_TYPE: Record<string, NFTRarity> = {
-  Mythic: "mythic",
-  Legendary: "legendary",
-  Epic: "epic",
-  Rare: "rare",
-  Uncommon: "uncommon",
-  Common: "common",
-};
-
-const RARITY_SCORES: Record<string, number> = {
-  Mythic: 96,
-  Legendary: 88,
-  Epic: 72,
-  Rare: 55,
-  Uncommon: 38,
-  Common: 18,
 };
 
 export default function ProfilePanel() {
@@ -317,9 +291,6 @@ function MintedCard({
     : null;
   const seed = address ?? "genesis-default";
   const traits = generateTraits(seed, true);
-  const nftRarity: NFTRarity = RARITY_NFT_TYPE[traits.rarity] ?? "legendary";
-  const rarityScore = RARITY_SCORES[traits.rarity] ?? 88;
-  const tokenNum = `#${String((simpleHash(seed) % 100) + 1).padStart(4, "0")}`;
 
   const faceUrl = onChainPhotoUrl ?? faceImageUrl;
 
@@ -330,7 +301,7 @@ function MintedCard({
       <div
         style={{
           width: "200px",
-          height: "250px",
+          height: "220px",
           overflow: "hidden",
           borderRadius: "8px",
         }}
@@ -345,7 +316,7 @@ function MintedCard({
       <div
         style={{
           width: "200px",
-          height: "250px",
+          height: "220px",
           display: "flex",
           alignItems: "center",
           justifyContent: "center",
@@ -381,10 +352,10 @@ function MintedCard({
       initial={{ opacity: 0, y: 12 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ delay: 0.15 }}
-      className="flex flex-col gap-3"
+      className="flex flex-col gap-5 items-center"
     >
       {onChainRecord && (
-        <div className="flex items-center justify-between">
+        <div className="flex items-center justify-between w-full">
           <div
             className="flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-bold"
             style={{
@@ -404,21 +375,20 @@ function MintedCard({
           )}
         </div>
       )}
-      <NFTCard
-        name={
-          identityType === "realface"
-            ? "Real Face Identity"
-            : "Genesis Prydo ID"
-        }
-        number={tokenNum}
-        collection="PRYDO GENESIS"
-        rarity={nftRarity}
-        background={traits.background}
-        symbol={traits.identitySymbol}
-        character={identityType === "realface" ? "Verified" : traits.hairStyle}
-        rarityScore={rarityScore}
-        artContent={artNode}
-      />
+      {/* PrydoBadge replaces NFTCard */}
+      <div style={{ paddingTop: 32 }}>
+        <PrydoBadge
+          variant="genesis"
+          name={
+            identityType === "realface"
+              ? "Real Face Identity"
+              : `${traits.hairStyle} Genesis`
+          }
+          pronouns="They/Them"
+          avatarContent={artNode}
+          votingPower={150}
+        />
+      </div>
     </motion.div>
   );
 }

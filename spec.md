@@ -1,40 +1,27 @@
 # Prydo Identity NFT
 
 ## Current State
-- Backend is empty (`actor {}`)
-- Frontend displays ICP and IPFS as tech stack badges only — no real backend integration
-- Minting is simulated (no on-chain data stored)
-- Face photo uploads are stored only in React state (lost on refresh)
+NFT cards use a generic trading card format (NFTCard.tsx) with rarity-colored border glow, SVG art panel, trait rows, and score bar. ProfilePanel shows a minted card using NFTCard. AvatarSection shows 4 showcase cards using NFTCard.
 
 ## Requested Changes (Diff)
 
 ### Add
-- Motoko backend actor with:
-  - `storePrydoID`: stores minted Prydo ID metadata (wallet address, tier, avatar type, timestamp) on ICP canister storage
-  - `getPrydoID`: retrieve a Prydo ID by wallet address
-  - `getAllPrydoIDs`: list all minted IDs (for community explorer)
-  - `storeIPFSHash`: store an IPFS CID associated with a wallet's Prydo ID (avatar/face metadata)
-  - `getIPFSHash`: retrieve IPFS CID for a wallet
-  - `getStats`: return total minted count and storage info
-- Frontend `ICPStorageService` — calls backend actor to persist mint data after Polygon tx
-- Frontend `IPFSUploadService` — uploads avatar/face metadata JSON to IPFS via web3.storage HTTP API (using http-outcalls from backend)
-- `DecentralizedStoragePanel` component — shows live ICP canister stats and IPFS CID for user's minted ID
-- Update `TechStackSection` to show live "On-Chain" badges once data is stored
-- Update `MintSection` to call ICP storage after successful mint
-- Update `ProfilePanel` to show IPFS CID and ICP storage status
+- New `PrydoBadge.tsx` component with two badge variants:
+  1. **Genesis badge** (gold ornate): Decorative gold frame with wing motifs at top corners, crystalline gem centerpiece at top, galaxy/nebula background inside card, character avatar/face in center, name + pronouns text block, gold ribbon banner with "GENESIS" text, bottom stats row showing LGBTQ+ Pioneer icon + Voting Power 150
+  2. **Member badge** (silver chrome): Sleek silver/chrome futuristic frame, rainbow pride flag decoration at top center, blue radial ray burst background, character avatar/face, name + pronouns, "Prydo Member" tier label, bottom stats row showing Joined year + Reputation score
 
 ### Modify
-- `MintSection.tsx`: after `eth_sendTransaction`, also call `storePrydoID` on ICP backend and store IPFS hash
-- `ProfilePanel.tsx`: display ICP storage confirmation and IPFS CID for the minted ID
-- `TechStackSection.tsx`: add live status indicator (green dot + "Live" badge) for ICP and IPFS cards
+- `ProfilePanel.tsx`: Use new `PrydoBadge` component instead of `NFTCard` for minted user cards. Genesis ID tier → genesis variant. Regular/avatar identity → member variant.
+- `AvatarSection.tsx`: Replace/update the 4 showcase NFT trading cards to use the new `PrydoBadge` design aesthetic — at minimum the two main card types (Genesis gold + Member silver) should be showcased.
+- `NFTCard.tsx`: Can keep for backward compatibility but the primary display cards should use the new badge design.
 
 ### Remove
 - Nothing removed
 
 ## Implementation Plan
-1. Select `blob-storage` and `http-outcalls` components
-2. Generate Motoko backend with PrydoID storage map, IPFS hash map, stats query
-3. Update frontend to call backend actor methods after minting
-4. Add `DecentralizedStoragePanel` showing ICP canister ID, stored count, and user's IPFS CID
-5. Update ProfilePanel to show ICP + IPFS status
-6. Validate and deploy
+1. Create `src/frontend/src/components/PrydoBadge.tsx` with two variants rendered via SVG/CSS — genesis (gold, ornate wings/gems/galaxy) and member (silver, rainbow flag/blue rays)
+2. The badge should accept: `variant: 'genesis' | 'member'`, `name: string`, `pronouns: string`, `avatarContent: ReactNode`, `votingPower?: number`, `reputation?: number`, `joinedYear?: number`
+3. Genesis badge SVG frame: multi-layer gold gradient border, decorative golden wings top-left/right, crystal gem SVG at top-center (with prismatic rainbow), galaxy nebula background behind avatar
+4. Member badge SVG frame: silver/chrome gradient border with tech panel details, rainbow flag SVG strip at top-center, blue radial ray background behind avatar
+5. Update ProfilePanel to use PrydoBadge
+6. Update AvatarSection showcase to use PrydoBadge

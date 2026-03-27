@@ -1,56 +1,38 @@
 import { motion, useInView } from "motion/react";
 import { useRef, useState } from "react";
-import NFTCard, { type NFTRarity } from "./NFTCard";
+import AvatarBuilder from "./AvatarBuilder";
+import PrydoBadge from "./PrydoBadge";
 
-const sampleNFTs: {
-  name: string;
-  number: string;
-  collection: string;
-  rarity: NFTRarity;
-  background: string;
-  symbol: string;
-  character: string;
-  rarityScore: number;
-}[] = [
+const showcaseBadges = [
   {
+    variant: "genesis" as const,
     name: "Cosmic Guardian",
-    number: "#007",
-    collection: "PRYDO GENESIS",
-    rarity: "epic",
-    background: "Cosmic Nebula",
-    symbol: "Rainbow Halo",
-    character: "Non-Binary",
-    rarityScore: 78,
+    pronouns: "They/Them",
+    seed: "cosmic-guardian-007",
+    votingPower: 200,
   },
   {
+    variant: "member" as const,
     name: "Prydo Warrior",
-    number: "#023",
-    collection: "PRYDO GENESIS",
-    rarity: "rare",
-    background: "Rainbow Gradient",
-    symbol: "Prydo Flag",
-    character: "Queer Hero",
-    rarityScore: 62,
+    pronouns: "She/Her",
+    seed: "prydo-warrior-023",
+    reputation: 87,
+    joinedYear: 2024,
   },
   {
+    variant: "genesis" as const,
     name: "Golden Legend",
-    number: "#001",
-    collection: "PRYDO GENESIS",
-    rarity: "legendary",
-    background: "Golden Sunset",
-    symbol: "Solar Infinity",
-    character: "Guardian",
-    rarityScore: 91,
+    pronouns: "He/Him",
+    seed: "golden-legend-001",
+    votingPower: 150,
   },
   {
+    variant: "member" as const,
     name: "Mythic Transcendent",
-    number: "#002",
-    collection: "PRYDO GENESIS",
-    rarity: "mythic",
-    background: "Galaxy Pink",
-    symbol: "Infinity Halo",
-    character: "Transcendent",
-    rarityScore: 97,
+    pronouns: "Ze/Zir",
+    seed: "mythic-transcendent-002",
+    reputation: 124,
+    joinedYear: 2026,
   },
 ];
 
@@ -278,20 +260,38 @@ export default function AvatarSection() {
           ))}
         </motion.div>
 
-        {/* NFT Card Gallery */}
+        {/* Prydo Badge Gallery */}
         <div className="overflow-x-auto pb-4 mb-14">
-          <div className="grid grid-cols-2 lg:grid-cols-4 gap-5 min-w-[520px] lg:min-w-0">
-            {sampleNFTs.map((nft, i) => (
+          <div
+            className="grid gap-8 min-w-[600px] lg:min-w-0"
+            style={{ gridTemplateColumns: "repeat(4, minmax(0, 1fr))" }}
+          >
+            {showcaseBadges.map((badge, i) => (
               <motion.div
-                key={nft.name}
+                key={badge.name}
                 initial={{ opacity: 0, y: 30 }}
                 whileInView={{ opacity: 1, y: 0 }}
                 viewport={{ once: true }}
                 transition={{ duration: 0.6, delay: i * 0.1 }}
-                className="hover:scale-[1.03] transition-transform cursor-pointer"
+                className="flex justify-center"
+                style={{ paddingTop: 40 }}
                 data-ocid={`avatars.item.${i + 1}`}
               >
-                <NFTCard {...nft} />
+                <PrydoBadge
+                  variant={badge.variant}
+                  name={badge.name}
+                  pronouns={badge.pronouns}
+                  avatarContent={
+                    <AvatarBuilder
+                      seed={badge.seed}
+                      size={180}
+                      isGenesis={badge.variant === "genesis"}
+                    />
+                  }
+                  votingPower={badge.votingPower}
+                  reputation={badge.reputation}
+                  joinedYear={badge.joinedYear}
+                />
               </motion.div>
             ))}
           </div>
