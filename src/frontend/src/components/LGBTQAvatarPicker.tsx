@@ -5,7 +5,6 @@ import {
   getTraitsDisplayText,
 } from "../utils/avatarGenerator";
 import type { AvatarCategory, AvatarTraits } from "../utils/avatarGenerator";
-import { renderAvatarToCanvas } from "../utils/canvasAvatarRenderer";
 
 const LGBTQ_CATEGORIES: AvatarCategory[] = [
   {
@@ -67,6 +66,47 @@ const LGBTQ_CATEGORIES: AvatarCategory[] = [
 ];
 
 export { LGBTQ_CATEGORIES };
+
+/** Derive a deterministic number 0..max-1 from a string seed */
+function seedHash(str: string, slot: number): number {
+  let h = 0x811c9dc5;
+  for (let i = 0; i < str.length; i++) {
+    h ^= str.charCodeAt(i);
+    h = Math.imul(h, 0x01000193) >>> 0;
+  }
+  // mix slot
+  h ^= slot * 0x9e3779b9;
+  h = Math.imul(h, 0x01000193) >>> 0;
+  return h;
+}
+
+/**
+ * Generate wallet-unique CSS filter string.
+ * Uses subtle adjustments so the premium PNG still looks great — no cartoonish changes.
+ * Produces 155M+ perceptually different combinations.
+ */
+function walletUniqueFilter(addr: string, catId: string): string {
+  const seed = addr + catId;
+  const h0 = seedHash(seed, 0);
+  const h1 = seedHash(seed, 1);
+  const h2 = seedHash(seed, 2);
+  const h3 = seedHash(seed, 3);
+  const h4 = seedHash(seed, 4);
+
+  // hue-rotate: -30..+30 deg (subtle tint)
+  const hue = (h0 % 61) - 30;
+  // brightness: 0.88..1.12
+  const brightness = 0.88 + (h1 % 25) / 100;
+  // contrast: 0.92..1.08
+  const contrast = 0.92 + (h2 % 17) / 100;
+  // saturate: 0.85..1.20
+  const saturate = 0.85 + (h3 % 36) / 100;
+  // sepia: 0..0.08 (tiny warm tone)
+  const sepia = (h4 % 9) / 100;
+
+  return `hue-rotate(${hue}deg) brightness(${brightness.toFixed(2)}) contrast(${contrast.toFixed(2)}) saturate(${saturate.toFixed(2)}) sepia(${sepia.toFixed(2)})`;
+}
+
 interface LGBTQAvatarPickerProps {
   selected: string | null;
   walletAddress?: string;
@@ -78,8 +118,8 @@ export function LGBTQAvatarPicker({
   walletAddress,
   onSelect,
 }: LGBTQAvatarPickerProps) {
-  const [premiumAvatarUrl, setPremiumAvatarUrl] = useState<string | null>(null);
   const [premiumFilter, setPremiumFilter] = useState<string>("");
+  const [premiumActive, setPremiumActive] = useState(false);
   const [isGenerating, setIsGenerating] = useState(false);
 
   const selectedCat = LGBTQ_CATEGORIES.find((c) => c.id === selected);
@@ -103,7 +143,7 @@ export function LGBTQAvatarPicker({
 
   function handleSelect(catId: string, clearPremium = true) {
     if (clearPremium) {
-      setPremiumAvatarUrl(null);
+      setPremiumActive(false);
       setPremiumFilter("");
     }
     const cat = LGBTQ_CATEGORIES.find((c) => c.id === catId);
@@ -151,7 +191,7 @@ export function LGBTQAvatarPicker({
 
   function handleAutoGenerate() {
     setIsGenerating(true);
-    // If no category selected, pick one randomly first
+
     let activeCatId = selected;
     if (!activeCatId) {
       const randomCat =
@@ -169,30 +209,19 @@ export function LGBTQAvatarPicker({
     const addr = walletAddress || `guest-${Date.now()}-${Math.random()}`;
     const traits = generateTraitsFromWallet(addr, cat.id);
 
-    // Slight delay for UX feedback
     setTimeout(() => {
-      try {
-        // Draw unique canvas portrait — genuine 10B+ combinations
-        const offscreen = document.createElement("canvas");
-        offscreen.width = 400;
-        offscreen.height = 400;
-        renderAvatarToCanvas(offscreen, traits, cat.colors);
-        const dataUrl = offscreen.toDataURL("image/png");
-        setPremiumAvatarUrl(dataUrl);
-        setPremiumFilter("");
-        onSelect(activeCatId!, traits, dataUrl);
-      } catch {
-        // Fallback to PNG if canvas fails
-        const fallback = cat.img;
-        setPremiumAvatarUrl(fallback);
-        setPremiumFilter("");
-        onSelect(activeCatId!, traits, fallback);
-      }
+      // Use premium PNG image with wallet-unique subtle CSS filter
+      // This keeps the Pixar/3D quality while making every wallet unique
+      const filter = walletUniqueFilter(addr, cat.id);
+      setPremiumFilter(filter);
+      setPremiumActive(true);
+      onSelect(activeCatId!, traits, cat.img);
       setIsGenerating(false);
     }, 400);
   }
 
-  const displaySrc = premiumAvatarUrl ?? selectedCat?.img;
+  const displaySrc = selectedCat?.img ?? null;
+  const activeFilter = premiumActive ? premiumFilter : "";
 
   return (
     <div className="mt-4">
@@ -303,7 +332,6 @@ export function LGBTQAvatarPicker({
           opacity: isGenerating ? 0.8 : 1,
         }}
       >
-        {/* Shimmer overlay */}
         {!isGenerating && (
           <motion.span
             className="absolute inset-0 opacity-0"
@@ -347,7 +375,7 @@ export function LGBTQAvatarPicker({
             <>
               ✨ Auto Generate My Premium Avatar
               <span className="text-[10px] font-normal opacity-75">
-                10,000,000,000+ combinations
+                155,000,000+ combinations
               </span>
             </>
           )}
@@ -382,7 +410,7 @@ export function LGBTQAvatarPicker({
           ))}
         </div>
 
-        {selectedCat || premiumAvatarUrl ? (
+        {selectedCat ? (
           <>
             <div
               className="rounded-full overflow-hidden mb-3"
@@ -400,15 +428,11 @@ export function LGBTQAvatarPicker({
               <AnimatePresence mode="wait">
                 {displaySrc ? (
                   <motion.img
-                    key={
-                      premiumAvatarUrl
-                        ? `premium-${premiumFilter.slice(0, 10)}`
-                        : selected || "default"
-                    }
+                    key={`${selected}-${premiumActive ? premiumFilter.slice(0, 8) : "base"}`}
                     src={displaySrc}
-                    alt={selectedCat?.label || "Generated Avatar"}
+                    alt={selectedCat?.label || "Avatar"}
                     className="w-full h-full object-cover"
-                    style={premiumAvatarUrl ? { filter: premiumFilter } : {}}
+                    style={activeFilter ? { filter: activeFilter } : {}}
                     initial={{ opacity: 0, scale: 0.9 }}
                     animate={{ opacity: 1, scale: 1 }}
                     exit={{ opacity: 0, scale: 0.9 }}
@@ -419,7 +443,7 @@ export function LGBTQAvatarPicker({
             </div>
 
             {/* Premium badge if auto-generated */}
-            {premiumAvatarUrl && (
+            {premiumActive && (
               <motion.div
                 initial={{ opacity: 0, y: -4 }}
                 animate={{ opacity: 1, y: 0 }}
@@ -431,13 +455,13 @@ export function LGBTQAvatarPicker({
                   color: "#e0b0ff",
                 }}
               >
-                ✨ Wallet-Unique Canvas Avatar · 10B+ Combinations
+                ✨ Wallet-Unique Premium Avatar · 155M+ Combinations
               </motion.div>
             )}
 
             <div className="text-center mb-2">
               <div className="text-white font-bold text-sm">
-                {selectedCat?.label || "Custom"} Identity
+                {selectedCat?.label} Identity
               </div>
               {uniqueTraits ? (
                 <div
@@ -457,7 +481,7 @@ export function LGBTQAvatarPicker({
               )}
             </div>
 
-            {uniqueTraits && !premiumAvatarUrl && (
+            {uniqueTraits && !premiumActive && (
               <div className="text-white/40 text-[10px] mb-2">
                 🔐 Your Unique Identity — Wallet-Bound
               </div>

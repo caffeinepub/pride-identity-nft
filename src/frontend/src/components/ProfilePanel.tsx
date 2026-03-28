@@ -18,6 +18,7 @@ import { useActor } from "../hooks/useActor";
 import { generateTraits } from "./AvatarBuilder";
 import AvatarBuilder from "./AvatarBuilder";
 import PrydoBadge from "./PrydoBadge";
+import PrydoIDCard from "./PrydoIDCard";
 
 const walletLabels: Record<string, string> = {
   metamask: "MetaMask",
@@ -563,6 +564,23 @@ function MintedCard({
           )}
         </div>
       )}
+      {/* Prydo ID Card */}
+      <PrydoIDCard
+        name={
+          identityType === "realface"
+            ? "Real Face Identity"
+            : selectedAvatarCategory
+              ? `${selectedAvatarCategory.charAt(0).toUpperCase() + selectedAvatarCategory.slice(1)} Genesis`
+              : "Genesis Member"
+        }
+        prydoId={
+          address
+            ? `#PRYDO-${address.slice(2, 8).toUpperCase()}`
+            : "#PRYDO-0001"
+        }
+        tier="Genesis"
+        category={selectedAvatarCategory ?? undefined}
+      />
       {/* PrydoBadge */}
       <div style={{ paddingTop: 32 }}>
         <PrydoBadge

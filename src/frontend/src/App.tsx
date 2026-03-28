@@ -13,6 +13,7 @@ import NFTDisclaimerModal from "./components/NFTDisclaimerModal";
 import NavBar from "./components/NavBar";
 import PrivacyPolicyModal from "./components/PrivacyPolicyModal";
 import ProfilePanel from "./components/ProfilePanel";
+import PrydoIDCardShowcase from "./components/PrydoIDCardShowcase";
 import RoadmapSection from "./components/RoadmapSection";
 import TechStackSection from "./components/TechStackSection";
 import TermsModal from "./components/TermsModal";
@@ -82,6 +83,7 @@ function AppInner() {
           <AboutSection />
           <MintSection />
           <AvatarSection />
+          <PrydoIDCardShowcase />
           <EcosystemSection />
           <TechStackSection />
           <DecentralizedStoragePanel />
