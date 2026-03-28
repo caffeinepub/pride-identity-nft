@@ -101,7 +101,7 @@ export function generateTraitsFromWallet(
   return { ...base, rarityScore: computeRarity(base) };
 }
 
-const SKIN_TONES = [
+const _SKIN_TONES = [
   "#FDDBB4",
   "#F5C6A0",
   "#E8A87C",
@@ -112,7 +112,7 @@ const SKIN_TONES = [
   "#3B1F0E",
 ];
 
-const HAIR_COLORS = [
+const _HAIR_COLORS = [
   "#1A1A1A",
   "#3D2B1F",
   "#6B4226",
@@ -142,7 +142,7 @@ const HAIR_COLOR_NAMES = [
   "Pure White",
 ];
 
-const EYE_COLORS = [
+const _EYE_COLORS = [
   "#4A90D9",
   "#3D9970",
   "#8B4513",
@@ -164,7 +164,7 @@ const EYE_COLOR_NAMES = [
   "Aqua Crystal",
 ];
 
-const OUTFIT_COLORS = [
+const _OUTFIT_COLORS = [
   ["#1A237E", "#283593"],
   ["#880E4F", "#AD1457"],
   ["#006064", "#00838F"],
@@ -233,7 +233,7 @@ export function getTraitsDisplayText(traits: AvatarTraits): string[] {
   ];
 }
 
-function getHairPath(style: number): string {
+function _getHairPath(style: number): string {
   const styles = [
     "M140,185 Q200,130 260,185 L260,165 Q200,108 140,165 Z",
     "M130,200 Q160,120 200,140 Q240,120 270,200 Q260,100 200,90 Q140,100 130,200 Z",
@@ -249,7 +249,7 @@ function getHairPath(style: number): string {
   return styles[style] || styles[0];
 }
 
-function getAccessorySVG(accessory: number, color: string): string {
+function _getAccessorySVG(accessory: number, color: string): string {
   switch (accessory) {
     case 0:
       return `<g opacity="0.95"><polygon points="170,168 175,145 185,162 200,140 215,162 225,145 230,168" fill="${color}" opacity="0.9"/><polygon points="175,145 185,162 200,140 215,162 225,145 200,155" fill="white" opacity="0.3"/><circle cx="200" cy="140" r="5" fill="white" opacity="0.8"/><circle cx="175" cy="145" r="3" fill="${color}" opacity="1"/><circle cx="225" cy="145" r="3" fill="${color}" opacity="1"/></g>`;
@@ -268,7 +268,7 @@ function getAccessorySVG(accessory: number, color: string): string {
   }
 }
 
-function getFacialFeatureSVG(feature: number): string {
+function _getFacialFeatureSVG(feature: number): string {
   switch (feature) {
     case 1:
       return `<g opacity="0.5"><circle cx="178" cy="232" r="2" fill="#8B4513"/><circle cx="184" cy="236" r="1.5" fill="#8B4513"/><circle cx="172" cy="236" r="1.5" fill="#8B4513"/><circle cx="222" cy="232" r="2" fill="#8B4513"/><circle cx="228" cy="236" r="1.5" fill="#8B4513"/><circle cx="216" cy="236" r="1.5" fill="#8B4513"/></g>`;
@@ -287,18 +287,12 @@ export function renderAvatarSVG(
   traits: AvatarTraits,
   category: AvatarCategory,
 ): string {
-  const skinColor = SKIN_TONES[traits.skinTone];
-  const hairCol = HAIR_COLORS[traits.hairColor];
-  const eyeCol = EYE_COLORS[traits.eyeColor];
-  const [outfitA, outfitB] = OUTFIT_COLORS[traits.outfit];
   const glowCol = GLOW_COLORS[traits.glowColor];
   const catColors = category.colors;
   const bgColorA = catColors[traits.bgVariant % catColors.length] || "#0D0822";
   const bgColorB =
     catColors[(traits.bgVariant + 2) % catColors.length] || "#1A0533";
-  const hairPath = getHairPath(traits.hairStyle);
-  const accessorySVG = getAccessorySVG(traits.accessory, glowCol);
-  const facialSVG = getFacialFeatureSVG(traits.facialFeature);
+
   const rarityLabel =
     traits.rarityScore >= 90
       ? "MYTHIC"
@@ -315,67 +309,74 @@ export function renderAvatarSVG(
         : traits.rarityScore >= 60
           ? "#06B6D4"
           : "#10B981";
+
   const stripeWidth = 400 / catColors.length;
   const stripes = catColors
     .map(
       (c: string, i: number) =>
-        `<rect x="${i * stripeWidth}" y="368" width="${stripeWidth + 1}" height="18" fill="${c}"/>`,
+        `<rect x="${i * stripeWidth}" y="370" width="${stripeWidth + 1}" height="16" fill="${c}"/>`,
     )
     .join("");
 
-  return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 400" width="400" height="400">
+  // Generate unique star positions from wallet-derived traits
+  const stars = Array.from({ length: 20 }, (_, i) => {
+    const x = ((traits.skinTone * 37 + i * 73) % 360) + 20;
+    const y = ((traits.hairStyle * 41 + i * 67) % 340) + 10;
+    const r = i % 3 === 0 ? 2 : 1;
+    const op = (0.3 + (i % 5) * 0.1).toFixed(2);
+    return `<circle cx="${x}" cy="${y}" r="${r}" fill="${glowCol}" opacity="${op}"/>`;
+  }).join("");
+
+  return `<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" viewBox="0 0 400 400" width="400" height="400">
   <defs>
-    <radialGradient id="bgGrad" cx="50%" cy="40%" r="60%">
-      <stop offset="0%" stop-color="${bgColorA}" stop-opacity="0.9"/>
-      <stop offset="100%" stop-color="#050112" stop-opacity="1"/>
+    <radialGradient id="bgGrad" cx="50%" cy="45%" r="65%">
+      <stop offset="0%" stop-color="${bgColorA}" stop-opacity="0.95"/>
+      <stop offset="60%" stop-color="${bgColorB}" stop-opacity="0.9"/>
+      <stop offset="100%" stop-color="#020008" stop-opacity="1"/>
     </radialGradient>
-    <filter id="glow"><feGaussianBlur stdDeviation="4" result="blur"/><feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge></filter>
-    <filter id="softGlow"><feGaussianBlur stdDeviation="2" result="blur"/><feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge></filter>
-    <linearGradient id="outfitGrad" x1="0%" y1="0%" x2="0%" y2="100%">
-      <stop offset="0%" stop-color="${outfitA}"/><stop offset="100%" stop-color="${outfitB}"/>
-    </linearGradient>
-    <linearGradient id="rainbowGrad" x1="0%" y1="0%" x2="100%" y2="0%">
-      <stop offset="0%" stop-color="#FF5B5B"/><stop offset="33%" stop-color="#FFEB3B"/>
-      <stop offset="66%" stop-color="#2196F3"/><stop offset="100%" stop-color="#9C27B0"/>
-    </linearGradient>
-    <clipPath id="circleClip"><circle cx="200" cy="200" r="185"/></clipPath>
+    <radialGradient id="glowRing" cx="50%" cy="50%" r="50%">
+      <stop offset="70%" stop-color="transparent"/>
+      <stop offset="85%" stop-color="${glowCol}" stop-opacity="0.35"/>
+      <stop offset="100%" stop-color="${glowCol}" stop-opacity="0.0"/>
+    </radialGradient>
+    <radialGradient id="innerGlow" cx="50%" cy="50%" r="50%">
+      <stop offset="0%" stop-color="${glowCol}" stop-opacity="0.08"/>
+      <stop offset="100%" stop-color="transparent"/>
+    </radialGradient>
+    <filter id="softGlow" x="-10%" y="-10%" width="120%" height="120%">
+      <feGaussianBlur stdDeviation="3" result="blur"/>
+      <feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge>
+    </filter>
+    <clipPath id="circleClip"><circle cx="200" cy="195" r="158"/></clipPath>
+    <clipPath id="cardClip"><rect x="0" y="0" width="400" height="400" rx="16"/></clipPath>
   </defs>
-  <circle cx="200" cy="200" r="192" fill="none" stroke="${glowCol}" stroke-width="3" opacity="0.6" filter="url(#glow)"/>
-  <circle cx="200" cy="200" r="185" fill="none" stroke="${glowCol}" stroke-width="1.5" opacity="0.4"/>
-  <circle cx="200" cy="200" r="185" fill="url(#bgGrad)"/>
-  <circle cx="200" cy="160" r="120" fill="${bgColorA}" opacity="0.15"/>
-  <circle cx="280" cy="280" r="80" fill="${bgColorB}" opacity="0.1"/>
-  <g clip-path="url(#circleClip)">
-    <ellipse cx="200" cy="360" rx="90" ry="50" fill="url(#outfitGrad)" opacity="0.95"/>
-    <rect x="155" y="315" width="90" height="50" fill="url(#outfitGrad)" opacity="0.95" rx="8"/>
-    <rect x="188" y="278" width="24" height="42" fill="${skinColor}" rx="4"/>
-    <ellipse cx="155" cy="320" rx="38" ry="22" fill="${outfitA}" opacity="0.9"/>
-    <ellipse cx="245" cy="320" rx="38" ry="22" fill="${outfitA}" opacity="0.9"/>
-    <ellipse cx="200" cy="222" rx="65" ry="72" fill="${skinColor}" filter="url(#softGlow)"/>
-    <ellipse cx="136" cy="222" rx="12" ry="15" fill="${skinColor}"/>
-    <ellipse cx="264" cy="222" rx="12" ry="15" fill="${skinColor}"/>
-    <ellipse cx="200" cy="175" rx="66" ry="20" fill="${hairCol}" opacity="0.3"/>
-    <path d="${hairPath}" fill="${hairCol}" filter="url(#softGlow)"/>
-    <ellipse cx="178" cy="220" rx="14" ry="12" fill="white" opacity="0.95"/>
-    <ellipse cx="178" cy="220" rx="9" ry="10" fill="${eyeCol}"/>
-    <ellipse cx="178" cy="220" rx="5" ry="6" fill="#0D0822"/>
-    <circle cx="181" cy="217" r="2.5" fill="white" opacity="0.9"/>
-    <ellipse cx="222" cy="220" rx="14" ry="12" fill="white" opacity="0.95"/>
-    <ellipse cx="222" cy="220" rx="9" ry="10" fill="${eyeCol}"/>
-    <ellipse cx="222" cy="220" rx="5" ry="6" fill="#0D0822"/>
-    <circle cx="225" cy="217" r="2.5" fill="white" opacity="0.9"/>
-    <path d="M197,235 Q200,245 203,235" fill="none" stroke="${skinColor}" stroke-width="2" opacity="0.6"/>
-    <path d="M184,252 Q200,265 216,252" fill="none" stroke="#8B4513" stroke-width="2.5" stroke-linecap="round" opacity="0.6"/>
-    ${facialSVG}
-    <path d="M178,315 Q200,305 222,315 L216,325 Q200,315 184,325 Z" fill="${bgColorA}" opacity="0.6"/>
-    ${accessorySVG}
-    <ellipse cx="178" cy="220" rx="14" ry="12" fill="none" stroke="${eyeCol}" stroke-width="1" opacity="0.4"/>
-    <ellipse cx="222" cy="220" rx="14" ry="12" fill="none" stroke="${eyeCol}" stroke-width="1" opacity="0.4"/>
+  <g clip-path="url(#cardClip)">
+    <rect width="400" height="400" fill="url(#bgGrad)"/>
+    ${stars}
+    <circle cx="${60 + ((traits.hairColor * 23) % 80)}" cy="${50 + ((traits.eyeColor * 31) % 60)}" r="70" fill="${bgColorA}" opacity="0.2"/>
+    <circle cx="${250 + ((traits.outfit * 17) % 100)}" cy="${280 + ((traits.accessory * 29) % 80)}" r="60" fill="${bgColorB}" opacity="0.15"/>
+    <circle cx="200" cy="195" r="172" fill="url(#glowRing)"/>
+    <image href="${category.img}" x="42" y="37" width="316" height="316" clip-path="url(#circleClip)" preserveAspectRatio="xMidYMid slice"/>
+    <circle cx="200" cy="195" r="158" fill="url(#innerGlow)"/>
+    <circle cx="200" cy="195" r="160" fill="none" stroke="${glowCol}" stroke-width="2.5" opacity="0.8" filter="url(#softGlow)"/>
+    <circle cx="200" cy="195" r="164" fill="none" stroke="${glowCol}" stroke-width="0.8" opacity="0.4"/>
+    <circle cx="200" cy="195" r="170" fill="none" stroke="${glowCol}" stroke-width="0.5" opacity="0.2"/>
+    <line x1="10" y1="10" x2="40" y2="10" stroke="${glowCol}" stroke-width="2" opacity="0.7"/>
+    <line x1="10" y1="10" x2="10" y2="40" stroke="${glowCol}" stroke-width="2" opacity="0.7"/>
+    <line x1="390" y1="10" x2="360" y2="10" stroke="${glowCol}" stroke-width="2" opacity="0.7"/>
+    <line x1="390" y1="10" x2="390" y2="40" stroke="${glowCol}" stroke-width="2" opacity="0.7"/>
+    <line x1="10" y1="390" x2="40" y2="390" stroke="${glowCol}" stroke-width="2" opacity="0.7"/>
+    <line x1="10" y1="390" x2="10" y2="360" stroke="${glowCol}" stroke-width="2" opacity="0.7"/>
+    <line x1="390" y1="390" x2="360" y2="390" stroke="${glowCol}" stroke-width="2" opacity="0.7"/>
+    <line x1="390" y1="390" x2="390" y2="360" stroke="${glowCol}" stroke-width="2" opacity="0.7"/>
+    ${stripes}
+    <rect x="12" y="12" width="86" height="24" rx="12" fill="${rarityColor}" opacity="0.92" filter="url(#softGlow)"/>
+    <rect x="12" y="12" width="86" height="24" rx="12" fill="none" stroke="white" stroke-width="0.5" opacity="0.4"/>
+    <text x="55" y="28.5" text-anchor="middle" font-family="'Courier New', monospace" font-size="10.5" font-weight="700" fill="white">${rarityLabel}</text>
+    <rect x="302" y="12" width="86" height="24" rx="12" fill="rgba(0,0,0,0.7)" stroke="${rarityColor}" stroke-width="1.2"/>
+    <text x="345" y="28.5" text-anchor="middle" font-family="'Courier New', monospace" font-size="10.5" font-weight="700" fill="${rarityColor}">${traits.rarityScore}/100</text>
+    <rect x="118" y="340" width="164" height="22" rx="11" fill="rgba(0,0,0,0.75)" stroke="${glowCol}" stroke-width="1"/>
+    <text x="200" y="355" text-anchor="middle" font-family="'Courier New', monospace" font-size="9" font-weight="600" fill="${glowCol}">WALLET-BOUND IDENTITY</text>
   </g>
-  <g clip-path="url(#circleClip)">${stripes}</g>
-  <rect x="14" y="14" width="80" height="22" rx="11" fill="${rarityColor}" opacity="0.9"/>
-  <text x="54" y="29" text-anchor="middle" font-family="monospace" font-size="10" font-weight="700" fill="white">${rarityLabel}</text>
-  <rect x="310" y="14" width="76" height="22" rx="11" fill="rgba(0,0,0,0.6)" stroke="${rarityColor}" stroke-width="1"/>
-  <text x="348" y="29" text-anchor="middle" font-family="monospace" font-size="10" font-weight="700" fill="${rarityColor}">${traits.rarityScore}/100</text>
 </svg>`;
 }

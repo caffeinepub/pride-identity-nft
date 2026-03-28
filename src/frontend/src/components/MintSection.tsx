@@ -17,8 +17,12 @@ import { AnimatePresence, motion } from "motion/react";
 import { useCallback, useRef, useState } from "react";
 import { useWallet } from "../context/WalletContext";
 import { useActor } from "../hooks/useActor";
+import {
+  generateTraitsFromWallet,
+  renderAvatarSVG,
+} from "../utils/avatarGenerator";
 import { RandomAvatarPreview } from "./AvatarBuilder";
-import { LGBTQAvatarPicker } from "./LGBTQAvatarPicker";
+import { LGBTQAvatarPicker, LGBTQ_CATEGORIES } from "./LGBTQAvatarPicker";
 
 // TODO: Replace with deployed Soulbound NFT contract address on Polygon
 const PRYDO_NFT_CONTRACT = "0x0000000000000000000000000000000000000000";
@@ -674,6 +678,22 @@ export default function MintSection() {
           setFaceImageUrl((e.target?.result as string) ?? null);
         };
         reader.readAsDataURL(faceImageFile);
+      } else if (selectedLGBTQCategory && address) {
+        // Always regenerate from wallet address to ensure uniqueness per user
+        const cat = LGBTQ_CATEGORIES.find(
+          (c) => c.id === selectedLGBTQCategory,
+        );
+        if (cat) {
+          const traits = generateTraitsFromWallet(
+            address,
+            selectedLGBTQCategory,
+          );
+          const svg = renderAvatarSVG(traits, cat);
+          const dataUrl = `data:image/svg+xml;base64,${btoa(unescape(encodeURIComponent(svg)))}`;
+          setFaceImageUrl(dataUrl);
+          setSelectedAvatarDataUrl(dataUrl);
+          setSelectedAvatarCategory(selectedLGBTQCategory);
+        }
       } else if (lgbtqAvatarSrc) {
         setFaceImageUrl(lgbtqAvatarSrc);
         setSelectedAvatarDataUrl(lgbtqAvatarSrc);
