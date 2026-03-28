@@ -1,4 +1,5 @@
-import { motion } from "motion/react";
+import { AnimatePresence, motion } from "motion/react";
+import { useState } from "react";
 import {
   generateTraitsFromWallet,
   getTraitsDisplayText,
@@ -65,6 +66,59 @@ const LGBTQ_CATEGORIES: AvatarCategory[] = [
 ];
 
 export { LGBTQ_CATEGORIES };
+// Premium avatar variants per category — deterministically selected by wallet address
+const CATEGORY_VARIANTS: Record<string, string[]> = {
+  gay: [
+    "/assets/generated/lgbtq-gay-v1.dim_400x400.png",
+    "/assets/generated/lgbtq-gay-v2.dim_400x400.png",
+    "/assets/generated/lgbtq-gay-v3.dim_400x400.png",
+  ],
+  lesbian: [
+    "/assets/generated/lgbtq-lesbian-v1.dim_400x400.png",
+    "/assets/generated/lgbtq-lesbian-v2.dim_400x400.png",
+    "/assets/generated/lgbtq-lesbian-v3.dim_400x400.png",
+  ],
+  bisexual: [
+    "/assets/generated/lgbtq-bisexual-v1.dim_400x400.png",
+    "/assets/generated/lgbtq-bisexual-v2.dim_400x400.png",
+    "/assets/generated/lgbtq-bisexual-v3.dim_400x400.png",
+  ],
+  "trans-woman": [
+    "/assets/generated/lgbtq-trans-woman-v1.dim_400x400.png",
+    "/assets/generated/lgbtq-trans-woman-v2.dim_400x400.png",
+  ],
+  "trans-man": [
+    "/assets/generated/lgbtq-trans-man-v1.dim_400x400.png",
+    "/assets/generated/lgbtq-trans-man-v2.dim_400x400.png",
+  ],
+  nonbinary: [
+    "/assets/generated/lgbtq-nonbinary-v1.dim_400x400.png",
+    "/assets/generated/lgbtq-nonbinary-v2.dim_400x400.png",
+  ],
+  pansexual: [
+    "/assets/generated/lgbtq-pansexual-v1.dim_400x400.png",
+    "/assets/generated/lgbtq-pansexual-v2.dim_400x400.png",
+  ],
+  asexual: [
+    "/assets/generated/lgbtq-asexual-v1.dim_400x400.png",
+    "/assets/generated/lgbtq-asexual-v2.dim_400x400.png",
+  ],
+};
+
+function selectVariantForWallet(
+  walletAddr: string,
+  categoryId: string,
+): string {
+  const variants = CATEGORY_VARIANTS[categoryId];
+  if (!variants || variants.length === 0) return "";
+  // Hash wallet address to deterministically pick a variant
+  let hash = 0;
+  const key = walletAddr + categoryId;
+  for (let i = 0; i < key.length; i++) {
+    hash = (hash * 31 + key.charCodeAt(i)) >>> 0;
+  }
+  return variants[hash % variants.length];
+}
 
 interface LGBTQAvatarPickerProps {
   selected: string | null;
@@ -77,6 +131,10 @@ export function LGBTQAvatarPicker({
   walletAddress,
   onSelect,
 }: LGBTQAvatarPickerProps) {
+  const [premiumAvatarUrl, setPremiumAvatarUrl] = useState<string | null>(null);
+  const [premiumFilter, setPremiumFilter] = useState<string>("");
+  const [isGenerating, setIsGenerating] = useState(false);
+
   const selectedCat = LGBTQ_CATEGORIES.find((c) => c.id === selected);
 
   const uniqueTraits =
@@ -96,12 +154,15 @@ export function LGBTQAvatarPicker({
           : "#10B981"
     : "#10B981";
 
-  function handleSelect(catId: string) {
+  function handleSelect(catId: string, clearPremium = true) {
+    if (clearPremium) {
+      setPremiumAvatarUrl(null);
+      setPremiumFilter("");
+    }
     const cat = LGBTQ_CATEGORIES.find((c) => c.id === catId);
     if (!cat) return;
     if (walletAddress) {
       const traits = generateTraitsFromWallet(walletAddress, catId);
-      // Always pass the PNG path directly — SVG data URLs with external image refs render blank
       onSelect(catId, traits, cat.img);
     } else {
       const emptyTraits: AvatarTraits = {
@@ -116,6 +177,20 @@ export function LGBTQAvatarPicker({
         facialFeature: 0,
         glowColor: 0,
         rarityScore: 0,
+        faceShape: 0,
+        skinToneIdx: 0,
+        hairStyleIdx: 0,
+        hairColorIdx: 0,
+        eyeShapeIdx: 0,
+        eyeColorIdx: 0,
+        browStyleIdx: 0,
+        lipStyleIdx: 0,
+        noseIdx: 0,
+        bgThemeIdx: 0,
+        outfitIdx: 0,
+        accessoryIdx: 0,
+        specialMarkIdx: 0,
+        expressionIdx: 0,
       };
       onSelect(catId, emptyTraits, cat.img);
     }
@@ -126,6 +201,53 @@ export function LGBTQAvatarPicker({
       LGBTQ_CATEGORIES[Math.floor(Math.random() * LGBTQ_CATEGORIES.length)];
     handleSelect(cat.id);
   }
+
+  function handleAutoGenerate() {
+    setIsGenerating(true);
+    // If no category selected, pick one randomly first
+    let activeCatId = selected;
+    if (!activeCatId) {
+      const randomCat =
+        LGBTQ_CATEGORIES[Math.floor(Math.random() * LGBTQ_CATEGORIES.length)];
+      activeCatId = randomCat.id;
+      handleSelect(activeCatId, false);
+    }
+
+    const cat = LGBTQ_CATEGORIES.find((c) => c.id === activeCatId);
+    if (!cat) {
+      setIsGenerating(false);
+      return;
+    }
+
+    const addr = walletAddress || `guest-${Date.now()}-${Math.random()}`;
+    const traits = generateTraitsFromWallet(addr, cat.id);
+
+    // Generate unique CSS filter from traits for premium PNG uniqueness
+    const hue = Math.round(
+      (traits.hairColorIdx * 37 +
+        traits.skinToneIdx * 19 +
+        traits.eyeColorIdx * 13) %
+        360,
+    );
+    const sat =
+      90 + Math.round((traits.outfitIdx * 7 + traits.accessoryIdx * 11) % 40);
+    const bright =
+      92 + Math.round((traits.bgThemeIdx * 5 + traits.expressionIdx * 3) % 16);
+    const contrast = 98 + Math.round((traits.rarityScore * 0.1) % 6);
+    const filter = `hue-rotate(${hue}deg) saturate(${sat}%) brightness(${bright}%) contrast(${contrast}%)`;
+
+    // Slight delay for UX feedback
+    setTimeout(() => {
+      // Pick a unique variant image based on wallet address — genuinely different face
+      const premiumUrl = selectVariantForWallet(addr, cat.id) || cat.img;
+      setPremiumAvatarUrl(premiumUrl);
+      setPremiumFilter(filter);
+      onSelect(activeCatId!, traits, premiumUrl);
+      setIsGenerating(false);
+    }, 400);
+  }
+
+  const displaySrc = premiumAvatarUrl ?? selectedCat?.img;
 
   return (
     <div className="mt-4">
@@ -219,13 +341,81 @@ export function LGBTQAvatarPicker({
         })}
       </div>
 
+      {/* ✨ Auto Generate Button */}
+      <motion.button
+        data-ocid="lgbtq.primary_button"
+        onClick={handleAutoGenerate}
+        disabled={isGenerating}
+        whileHover={isGenerating ? {} : { scale: 1.02 }}
+        whileTap={isGenerating ? {} : { scale: 0.97 }}
+        className="mt-4 w-full py-3 rounded-2xl font-bold text-white text-sm relative overflow-hidden"
+        style={{
+          background:
+            "linear-gradient(135deg, #7c3aed 0%, #a855f7 40%, #ec4899 70%, #f97316 100%)",
+          boxShadow:
+            "0 0 24px rgba(168,85,247,0.5), 0 4px 20px rgba(236,72,153,0.3)",
+          border: "1px solid rgba(255,255,255,0.2)",
+          opacity: isGenerating ? 0.8 : 1,
+        }}
+      >
+        {/* Shimmer overlay */}
+        {!isGenerating && (
+          <motion.span
+            className="absolute inset-0 opacity-0"
+            style={{
+              background:
+                "linear-gradient(105deg, transparent 40%, rgba(255,255,255,0.18) 50%, transparent 60%)",
+            }}
+            animate={{ opacity: [0, 1, 0], x: ["-100%", "200%"] }}
+            transition={{
+              duration: 2.5,
+              repeat: Number.POSITIVE_INFINITY,
+              repeatDelay: 2,
+            }}
+          />
+        )}
+        <span className="relative z-10 flex items-center justify-center gap-2">
+          {isGenerating ? (
+            <>
+              <svg
+                className="animate-spin"
+                width="16"
+                height="16"
+                viewBox="0 0 16 16"
+                fill="none"
+                aria-label="Loading"
+                role="img"
+              >
+                <circle
+                  cx="8"
+                  cy="8"
+                  r="6"
+                  stroke="white"
+                  strokeWidth="2"
+                  strokeDasharray="30"
+                  strokeDashoffset="10"
+                />
+              </svg>
+              Generating your premium avatar...
+            </>
+          ) : (
+            <>
+              ✨ Auto Generate My Premium Avatar
+              <span className="text-[10px] font-normal opacity-75">
+                10,000+ combinations
+              </span>
+            </>
+          )}
+        </span>
+      </motion.button>
+
       {/* Large Preview */}
       <motion.div
         key={selected || "none"}
         initial={{ opacity: 0, y: 8 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.35 }}
-        className="mt-5 rounded-2xl p-5 flex flex-col items-center"
+        className="mt-4 rounded-2xl p-5 flex flex-col items-center"
         style={{
           background: "rgba(255,255,255,0.04)",
           border: uniqueTraits
@@ -247,7 +437,7 @@ export function LGBTQAvatarPicker({
           ))}
         </div>
 
-        {selectedCat ? (
+        {selectedCat || premiumAvatarUrl ? (
           <>
             <div
               className="rounded-full overflow-hidden mb-3"
@@ -262,16 +452,47 @@ export function LGBTQAvatarPicker({
                   : "none",
               }}
             >
-              <img
-                src={selectedCat.img}
-                alt={selectedCat.label}
-                className="w-full h-full object-cover"
-              />
+              <AnimatePresence mode="wait">
+                {displaySrc ? (
+                  <motion.img
+                    key={
+                      premiumAvatarUrl
+                        ? `premium-${premiumFilter.slice(0, 10)}`
+                        : selected || "default"
+                    }
+                    src={displaySrc}
+                    alt={selectedCat?.label || "Generated Avatar"}
+                    className="w-full h-full object-cover"
+                    style={premiumAvatarUrl ? { filter: premiumFilter } : {}}
+                    initial={{ opacity: 0, scale: 0.9 }}
+                    animate={{ opacity: 1, scale: 1 }}
+                    exit={{ opacity: 0, scale: 0.9 }}
+                    transition={{ duration: 0.3 }}
+                  />
+                ) : null}
+              </AnimatePresence>
             </div>
+
+            {/* Premium badge if auto-generated */}
+            {premiumAvatarUrl && (
+              <motion.div
+                initial={{ opacity: 0, y: -4 }}
+                animate={{ opacity: 1, y: 0 }}
+                className="mb-2 px-3 py-1 rounded-full text-[10px] font-bold flex items-center gap-1"
+                style={{
+                  background:
+                    "linear-gradient(135deg, rgba(124,58,237,0.3), rgba(236,72,153,0.3))",
+                  border: "1px solid rgba(168,85,247,0.5)",
+                  color: "#e0b0ff",
+                }}
+              >
+                ✨ Wallet-Unique Premium Avatar · 155M+ Combinations
+              </motion.div>
+            )}
 
             <div className="text-center mb-2">
               <div className="text-white font-bold text-sm">
-                {selectedCat.label} Identity
+                {selectedCat?.label || "Custom"} Identity
               </div>
               {uniqueTraits ? (
                 <div
@@ -291,7 +512,7 @@ export function LGBTQAvatarPicker({
               )}
             </div>
 
-            {uniqueTraits && (
+            {uniqueTraits && !premiumAvatarUrl && (
               <div className="text-white/40 text-[10px] mb-2">
                 🔐 Your Unique Identity — Wallet-Bound
               </div>
@@ -360,7 +581,7 @@ export function LGBTQAvatarPicker({
             boxShadow: "0 0 12px rgba(168,85,247,0.2)",
           }}
         >
-          ✨ Choose for me randomly
+          🎲 Choose for me randomly
         </motion.button>
       </motion.div>
     </div>
