@@ -17,10 +17,7 @@ import { AnimatePresence, motion } from "motion/react";
 import { useCallback, useRef, useState } from "react";
 import { useWallet } from "../context/WalletContext";
 import { useActor } from "../hooks/useActor";
-import {
-  generateTraitsFromWallet,
-  renderAvatarSVG,
-} from "../utils/avatarGenerator";
+import { generateTraitsFromWallet } from "../utils/avatarGenerator";
 import { LGBTQAvatarPicker, LGBTQ_CATEGORIES } from "./LGBTQAvatarPicker";
 
 type LocalIdentityType = "real-face" | "avatar" | null;
@@ -651,15 +648,19 @@ export default function MintSection() {
         setFaceImageUrl((e.target?.result as string) ?? null);
       };
       reader.readAsDataURL(faceImageFile);
-    } else if (selectedLGBTQCategory && address) {
-      // Always regenerate from wallet address to ensure uniqueness per user
+    } else if (selectedLGBTQCategory) {
+      // Use the category PNG directly — SVG data URLs with external image refs render blank
       const cat = LGBTQ_CATEGORIES.find((c) => c.id === selectedLGBTQCategory);
-      if (cat) {
-        const traits = generateTraitsFromWallet(address, selectedLGBTQCategory);
-        const svg = renderAvatarSVG(traits, cat);
-        const dataUrl = `data:image/svg+xml;base64,${btoa(unescape(encodeURIComponent(svg)))}`;
-        setFaceImageUrl(dataUrl);
-        setSelectedAvatarDataUrl(dataUrl);
+      const imgSrc = lgbtqAvatarSrc ?? (cat ? cat.img : null);
+      if (imgSrc) {
+        setFaceImageUrl(imgSrc);
+        setSelectedAvatarDataUrl(imgSrc);
+        setSelectedAvatarCategory(selectedLGBTQCategory);
+      } else if (address && cat) {
+        // Still compute traits for rarity score but use PNG for display
+        generateTraitsFromWallet(address, selectedLGBTQCategory);
+        setFaceImageUrl(cat.img);
+        setSelectedAvatarDataUrl(cat.img);
         setSelectedAvatarCategory(selectedLGBTQCategory);
       }
     } else if (lgbtqAvatarSrc) {

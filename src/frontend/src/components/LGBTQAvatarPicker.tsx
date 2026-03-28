@@ -2,7 +2,6 @@ import { motion } from "motion/react";
 import {
   generateTraitsFromWallet,
   getTraitsDisplayText,
-  renderAvatarSVG,
 } from "../utils/avatarGenerator";
 import type { AvatarCategory, AvatarTraits } from "../utils/avatarGenerator";
 
@@ -70,15 +69,7 @@ export { LGBTQ_CATEGORIES };
 interface LGBTQAvatarPickerProps {
   selected: string | null;
   walletAddress?: string;
-  onSelect: (
-    categoryId: string,
-    traits: AvatarTraits,
-    svgDataUrl: string,
-  ) => void;
-}
-
-function traitsToSvgDataUrl(svgString: string): string {
-  return `data:image/svg+xml;base64,${btoa(unescape(encodeURIComponent(svgString)))}`;
+  onSelect: (categoryId: string, traits: AvatarTraits, imgSrc: string) => void;
 }
 
 export function LGBTQAvatarPicker({
@@ -93,11 +84,6 @@ export function LGBTQAvatarPicker({
       ? generateTraitsFromWallet(walletAddress, selectedCat.id)
       : null;
 
-  const uniqueSvg =
-    uniqueTraits && selectedCat
-      ? renderAvatarSVG(uniqueTraits, selectedCat)
-      : null;
-  const uniqueDataUrl = uniqueSvg ? traitsToSvgDataUrl(uniqueSvg) : null;
   const traitLabels = uniqueTraits ? getTraitsDisplayText(uniqueTraits) : [];
 
   const rarityColor = uniqueTraits
@@ -115,8 +101,8 @@ export function LGBTQAvatarPicker({
     if (!cat) return;
     if (walletAddress) {
       const traits = generateTraitsFromWallet(walletAddress, catId);
-      const svg = renderAvatarSVG(traits, cat);
-      onSelect(catId, traits, traitsToSvgDataUrl(svg));
+      // Always pass the PNG path directly — SVG data URLs with external image refs render blank
+      onSelect(catId, traits, cat.img);
     } else {
       const emptyTraits: AvatarTraits = {
         category: catId,
@@ -153,7 +139,7 @@ export function LGBTQAvatarPicker({
         </p>
       </div>
 
-      {/* Category Grid — shows reference images for selection */}
+      {/* Category Grid */}
       <div className="grid grid-cols-4 gap-3 sm:grid-cols-4">
         {LGBTQ_CATEGORIES.map((cat, i) => {
           const isSelected = selected === cat.id;
@@ -233,7 +219,7 @@ export function LGBTQAvatarPicker({
         })}
       </div>
 
-      {/* Large Preview — always shows the category reference image with glow effects */}
+      {/* Large Preview */}
       <motion.div
         key={selected || "none"}
         initial={{ opacity: 0, y: 8 }}
@@ -268,15 +254,14 @@ export function LGBTQAvatarPicker({
               style={{
                 width: 160,
                 height: 160,
-                border: uniqueDataUrl
+                border: uniqueTraits
                   ? `3px solid ${rarityColor}99`
                   : "3px solid rgba(255,255,255,0.25)",
-                boxShadow: uniqueDataUrl
+                boxShadow: uniqueTraits
                   ? `0 0 30px ${rarityColor}55, 0 0 60px ${rarityColor}22`
                   : "none",
               }}
             >
-              {/* Always use selectedCat.img — base64 SVG data URLs can't load external images */}
               <img
                 src={selectedCat.img}
                 alt={selectedCat.label}
