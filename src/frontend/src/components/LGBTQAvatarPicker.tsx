@@ -233,7 +233,7 @@ export function LGBTQAvatarPicker({
         })}
       </div>
 
-      {/* Large Preview — shows uniquely generated avatar */}
+      {/* Large Preview — always shows the category reference image with glow effects */}
       <motion.div
         key={selected || "none"}
         initial={{ opacity: 0, y: 8 }}
@@ -276,9 +276,10 @@ export function LGBTQAvatarPicker({
                   : "none",
               }}
             >
+              {/* Always use selectedCat.img — base64 SVG data URLs can't load external images */}
               <img
-                src={uniqueDataUrl || selectedCat.img}
-                alt={uniqueDataUrl ? "Your unique avatar" : selectedCat.label}
+                src={selectedCat.img}
+                alt={selectedCat.label}
                 className="w-full h-full object-cover"
               />
             </div>

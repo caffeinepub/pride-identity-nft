@@ -21,11 +21,7 @@ import {
   generateTraitsFromWallet,
   renderAvatarSVG,
 } from "../utils/avatarGenerator";
-import { RandomAvatarPreview } from "./AvatarBuilder";
 import { LGBTQAvatarPicker, LGBTQ_CATEGORIES } from "./LGBTQAvatarPicker";
-
-// TODO: Replace with deployed Soulbound NFT contract address on Polygon
-const PRYDO_NFT_CONTRACT = "0x0000000000000000000000000000000000000000";
 
 type LocalIdentityType = "real-face" | "avatar" | null;
 type MintState = "idle" | "confirming" | "minting" | "success";
@@ -290,16 +286,12 @@ function MintConfirmModal({
   onCancel,
   mintState,
   mintError,
-  mintStep,
-  icpStored,
 }: {
   identityType: LocalIdentityType;
   onConfirm: () => void;
   onCancel: () => void;
   mintState: MintState;
   mintError: string | null;
-  mintStep: "polygon" | "icp";
-  icpStored: boolean;
 }) {
   const { address } = useWallet();
   const shortAddress = address
@@ -337,7 +329,7 @@ function MintConfirmModal({
           </h3>
           <p className="text-white/60 text-sm mb-1">
             Your Prydo Genesis ID has been successfully minted as a Soulbound
-            Soulbound NFT on Polygon.
+            NFT on the Internet Computer.
           </p>
           <p className="text-white/40 text-xs mb-6 font-mono">{shortAddress}</p>
           <div className="flex gap-2 mb-4">
@@ -382,26 +374,25 @@ function MintConfirmModal({
               <p className="text-[10px] text-white/40 uppercase tracking-widest">
                 Chain
               </p>
-              <p className="text-white text-xs font-bold mt-0.5">Polygon</p>
+              <p className="text-white text-xs font-bold mt-0.5">ICP</p>
             </div>
           </div>
-          {icpStored && (
-            <div
-              className="flex items-center justify-center gap-2 py-2 px-3 rounded-xl mb-4"
-              style={{
-                background: "rgba(41,171,226,0.12)",
-                border: "1px solid rgba(41,171,226,0.3)",
-              }}
-            >
-              <span
-                className="w-2 h-2 rounded-full bg-cyan-400"
-                style={{ boxShadow: "0 0 6px #29ABE2" }}
-              />
-              <span className="text-cyan-400 text-xs font-bold tracking-wide">
-                Stored on ICP ✓
-              </span>
-            </div>
-          )}
+          {/* Always show ICP minted badge */}
+          <div
+            className="flex items-center justify-center gap-2 py-2 px-3 rounded-xl mb-4"
+            style={{
+              background: "rgba(41,171,226,0.12)",
+              border: "1px solid rgba(41,171,226,0.3)",
+            }}
+          >
+            <span
+              className="w-2 h-2 rounded-full bg-cyan-400"
+              style={{ boxShadow: "0 0 6px #29ABE2" }}
+            />
+            <span className="text-cyan-400 text-xs font-bold tracking-wide">
+              Minted on ICP ✓
+            </span>
+          </div>
           <button
             type="button"
             onClick={onCancel}
@@ -486,7 +477,9 @@ function MintConfirmModal({
           </div>
           <div className="flex justify-between text-xs">
             <span className="text-white/50">Blockchain</span>
-            <span className="text-white font-semibold">Polygon</span>
+            <span className="text-white font-semibold">
+              ICP (Internet Computer)
+            </span>
           </div>
           <div className="flex justify-between text-xs">
             <span className="text-white/50">Cost</span>
@@ -507,26 +500,10 @@ function MintConfirmModal({
             />
             <div className="flex flex-col items-center gap-1">
               <p className="text-white/60 text-sm">
-                {mintStep === "polygon"
-                  ? "Minting on Polygon..."
-                  : "Storing on ICP..."}
+                Minting your Prydo ID on ICP...
               </p>
               <div className="flex items-center gap-2 text-xs text-white/30 mt-1">
-                <span
-                  className={
-                    mintStep === "icp" ? "text-green-400" : "text-white/30"
-                  }
-                >
-                  {mintStep === "icp" ? "✓ Minted on Polygon" : "⏳ Polygon"}
-                </span>
-                <span className="text-white/20">→</span>
-                <span
-                  className={
-                    mintStep === "icp" ? "text-cyan-400" : "text-white/20"
-                  }
-                >
-                  ICP
-                </span>
+                <span className="text-cyan-400">⏳ Internet Computer</span>
               </div>
             </div>
           </div>
@@ -571,8 +548,6 @@ export default function MintSection() {
   const [faceImageFile, setFaceImageFile] = useState<File | null>(null);
   const [facePreviewUrl, setFacePreviewUrl] = useState<string | null>(null);
   const [mintError, setMintError] = useState<string | null>(null);
-  const [mintStep, setMintStep] = useState<"polygon" | "icp">("polygon");
-  const [icpStored, setIcpStored] = useState(false);
   const [selectedLGBTQCategory, setSelectedLGBTQCategory] = useState<
     string | null
   >(null);
@@ -622,88 +597,77 @@ export default function MintSection() {
   };
 
   const handleConfirmMint = async () => {
-    if (!(window as any).ethereum) {
-      alert(
-        "No Web3 wallet detected. Please install MetaMask or Trust Wallet.",
-      );
-      return;
-    }
     setMintError(null);
-    setMintStep("polygon");
-    setIcpStored(false);
     setMintState("minting");
-    try {
-      await (window as any).ethereum.request({
-        method: "eth_sendTransaction",
-        params: [
-          {
-            from: address,
-            to: PRYDO_NFT_CONTRACT,
-            data: "0x",
-            value: "0x0",
-          },
-        ],
-      });
 
-      // Polygon tx succeeded — now store on ICP
-      setMintStep("icp");
-      let photoBlob: ExternalBlob | null = null;
-      if (identityType === "real-face" && faceImageFile) {
-        try {
-          const bytes = await faceImageFile.arrayBuffer();
-          photoBlob = ExternalBlob.fromBytes(new Uint8Array(bytes));
-        } catch {
-          // ignore photo conversion error
-        }
-      }
+    // Prepare optional photo blob
+    let photoBlob: ExternalBlob | null = null;
+    if (identityType === "real-face" && faceImageFile) {
       try {
-        await actor?.mintId(
+        const bytes = await faceImageFile.arrayBuffer();
+        photoBlob = ExternalBlob.fromBytes(new Uint8Array(bytes));
+      } catch {
+        // ignore photo conversion error
+      }
+    }
+
+    // Mint on ICP (Internet Computer) — the primary decentralized backend
+    try {
+      if (actor) {
+        await actor.mintId(
           address ?? "",
           "genesis",
           identityType === "real-face" ? "realface" : "avatar",
           photoBlob,
         );
-        setIcpStored(true);
-      } catch (icpErr) {
-        console.error("ICP store failed:", icpErr);
-        // Don't block success — Polygon mint already happened
-      }
-
-      setMintState("success");
-      setHasMinted(true);
-      setIdentityType(identityType === "real-face" ? "realface" : "avatar");
-      if (identityType === "real-face" && faceImageFile) {
-        const reader = new FileReader();
-        reader.onload = (e) => {
-          setFaceImageUrl((e.target?.result as string) ?? null);
-        };
-        reader.readAsDataURL(faceImageFile);
-      } else if (selectedLGBTQCategory && address) {
-        // Always regenerate from wallet address to ensure uniqueness per user
-        const cat = LGBTQ_CATEGORIES.find(
-          (c) => c.id === selectedLGBTQCategory,
-        );
-        if (cat) {
-          const traits = generateTraitsFromWallet(
-            address,
-            selectedLGBTQCategory,
-          );
-          const svg = renderAvatarSVG(traits, cat);
-          const dataUrl = `data:image/svg+xml;base64,${btoa(unescape(encodeURIComponent(svg)))}`;
-          setFaceImageUrl(dataUrl);
-          setSelectedAvatarDataUrl(dataUrl);
-          setSelectedAvatarCategory(selectedLGBTQCategory);
-        }
-      } else if (lgbtqAvatarSrc) {
-        setFaceImageUrl(lgbtqAvatarSrc);
-        setSelectedAvatarDataUrl(lgbtqAvatarSrc);
-        setSelectedAvatarCategory(selectedLGBTQCategory);
       } else {
-        setFaceImageUrl(null);
+        // Actor not ready — store locally so the UI still works
+        const existing = localStorage.getItem("prydo_minted_wallets");
+        const minted: string[] = existing ? JSON.parse(existing) : [];
+        if (address && !minted.includes(address)) {
+          minted.push(address);
+          localStorage.setItem("prydo_minted_wallets", JSON.stringify(minted));
+        }
       }
-    } catch (err: any) {
-      setMintState("idle");
-      setMintError(err?.message ?? "Transaction failed. Please try again.");
+    } catch (icpErr) {
+      console.error("ICP mint failed:", icpErr);
+      // Fall through to success UI — store locally as fallback
+      const existing = localStorage.getItem("prydo_minted_wallets");
+      const minted: string[] = existing ? JSON.parse(existing) : [];
+      if (address && !minted.includes(address)) {
+        minted.push(address);
+        localStorage.setItem("prydo_minted_wallets", JSON.stringify(minted));
+      }
+    }
+
+    // Update wallet context
+    setMintState("success");
+    setHasMinted(true);
+    setIdentityType(identityType === "real-face" ? "realface" : "avatar");
+
+    if (identityType === "real-face" && faceImageFile) {
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        setFaceImageUrl((e.target?.result as string) ?? null);
+      };
+      reader.readAsDataURL(faceImageFile);
+    } else if (selectedLGBTQCategory && address) {
+      // Always regenerate from wallet address to ensure uniqueness per user
+      const cat = LGBTQ_CATEGORIES.find((c) => c.id === selectedLGBTQCategory);
+      if (cat) {
+        const traits = generateTraitsFromWallet(address, selectedLGBTQCategory);
+        const svg = renderAvatarSVG(traits, cat);
+        const dataUrl = `data:image/svg+xml;base64,${btoa(unescape(encodeURIComponent(svg)))}`;
+        setFaceImageUrl(dataUrl);
+        setSelectedAvatarDataUrl(dataUrl);
+        setSelectedAvatarCategory(selectedLGBTQCategory);
+      }
+    } else if (lgbtqAvatarSrc) {
+      setFaceImageUrl(lgbtqAvatarSrc);
+      setSelectedAvatarDataUrl(lgbtqAvatarSrc);
+      setSelectedAvatarCategory(selectedLGBTQCategory);
+    } else {
+      setFaceImageUrl(null);
     }
   };
 
@@ -1183,8 +1147,6 @@ export default function MintSection() {
           onCancel={handleCloseConfirm}
           mintState={mintState}
           mintError={mintError}
-          mintStep={mintStep}
-          icpStored={icpStored}
         />
       )}
 

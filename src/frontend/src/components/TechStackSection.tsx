@@ -25,6 +25,7 @@ const techs = [
     color: "#8247E5",
     glow: "rgba(130,71,229,0.35)",
     badge: "Primary Chain",
+    comingSoon: true,
   },
   {
     name: "ICP",
@@ -68,6 +69,7 @@ const techs = [
     color: "#29ABE2",
     glow: "rgba(41,171,226,0.35)",
     badge: "Hosting Layer",
+    comingSoon: false,
   },
   {
     name: "IPFS",
@@ -141,6 +143,7 @@ const techs = [
     color: "#65C2CB",
     glow: "rgba(101,194,203,0.35)",
     badge: "Storage Layer",
+    comingSoon: false,
   },
 ];
 
@@ -212,16 +215,30 @@ export default function TechStackSection() {
                   >
                     {tech.icon}
                   </div>
-                  <span
-                    className="text-xs font-bold px-3 py-1 rounded-full border"
-                    style={{
-                      color: tech.color,
-                      borderColor: `${tech.color}50`,
-                      background: `${tech.color}12`,
-                    }}
-                  >
-                    {tech.badge}
-                  </span>
+                  <div className="flex flex-col items-end gap-1.5">
+                    <span
+                      className="text-xs font-bold px-3 py-1 rounded-full border"
+                      style={{
+                        color: tech.color,
+                        borderColor: `${tech.color}50`,
+                        background: `${tech.color}12`,
+                      }}
+                    >
+                      {tech.badge}
+                    </span>
+                    {tech.comingSoon && (
+                      <span
+                        className="text-[10px] font-bold px-2.5 py-0.5 rounded-full border flex items-center gap-1"
+                        style={{
+                          color: "#F59E0B",
+                          borderColor: "rgba(245,158,11,0.4)",
+                          background: "rgba(245,158,11,0.1)",
+                        }}
+                      >
+                        ⏳ NFT Minting — Coming Soon
+                      </span>
+                    )}
+                  </div>
                 </div>
 
                 <div>

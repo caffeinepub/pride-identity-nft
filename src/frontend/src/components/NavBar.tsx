@@ -31,15 +31,8 @@ export default function NavBar() {
   const [scrolled, setScrolled] = useState(false);
   const [dropdownOpen, setDropdownOpen] = useState(false);
   const [copied, setCopied] = useState(false);
-  const {
-    address,
-    walletType,
-    openModal,
-    openProfile,
-    disconnect,
-    isCorrectNetwork,
-    switchToPolygon,
-  } = useWallet();
+  const { address, walletType, openModal, openProfile, disconnect } =
+    useWallet();
 
   useEffect(() => {
     const handler = () => setScrolled(window.scrollY > 20);
@@ -138,36 +131,22 @@ export default function NavBar() {
                       {address}
                     </p>
                     <div className="mt-2">
-                      {isCorrectNetwork ? (
-                        <div
-                          className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs"
-                          style={{
-                            background: "rgba(34,197,94,0.1)",
-                            border: "1px solid rgba(34,197,94,0.25)",
-                          }}
+                      {/* ICP Network indicator — no network switching needed */}
+                      <div
+                        className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs"
+                        style={{
+                          background: "rgba(41,171,226,0.1)",
+                          border: "1px solid rgba(41,171,226,0.25)",
+                        }}
+                      >
+                        <span className="w-1.5 h-1.5 rounded-full bg-cyan-400 animate-pulse" />
+                        <span
+                          className="font-medium"
+                          style={{ color: "#29ABE2" }}
                         >
-                          <span className="w-1.5 h-1.5 rounded-full bg-green-400 animate-pulse" />
-                          <span className="text-green-400 font-medium">
-                            Polygon Mainnet
-                          </span>
-                        </div>
-                      ) : (
-                        <button
-                          type="button"
-                          onClick={switchToPolygon}
-                          className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs w-full text-left transition-all hover:opacity-80"
-                          style={{
-                            background: "rgba(251,146,60,0.1)",
-                            border: "1px solid rgba(251,146,60,0.3)",
-                          }}
-                          data-ocid="nav.switch_network.button"
-                        >
-                          <span className="w-1.5 h-1.5 rounded-full bg-orange-400" />
-                          <span className="text-orange-400 font-medium">
-                            Wrong Network — Switch
-                          </span>
-                        </button>
-                      )}
+                          ICP Network
+                        </span>
+                      </div>
                     </div>
                   </div>
                   <button
@@ -263,21 +242,18 @@ export default function NavBar() {
                 />
                 {shortAddress}
               </div>
-              {!isCorrectNetwork && (
-                <button
-                  type="button"
-                  onClick={switchToPolygon}
-                  className="px-4 py-2 rounded-full text-xs font-semibold flex items-center justify-center gap-2"
-                  style={{
-                    background: "rgba(251,146,60,0.15)",
-                    border: "1px solid rgba(251,146,60,0.3)",
-                    color: "#FB923C",
-                  }}
-                  data-ocid="nav.switch_network.button"
-                >
-                  Switch to Polygon
-                </button>
-              )}
+              {/* ICP Network badge — mobile */}
+              <div
+                className="px-4 py-2 rounded-full text-xs font-semibold flex items-center justify-center gap-2"
+                style={{
+                  background: "rgba(41,171,226,0.1)",
+                  border: "1px solid rgba(41,171,226,0.3)",
+                  color: "#29ABE2",
+                }}
+              >
+                <span className="w-1.5 h-1.5 rounded-full bg-cyan-400 animate-pulse" />
+                ICP Network
+              </div>
               <button
                 type="button"
                 onClick={() => {
