@@ -18,6 +18,7 @@ import { useCallback, useRef, useState } from "react";
 import { useWallet } from "../context/WalletContext";
 import { useActor } from "../hooks/useActor";
 import { RandomAvatarPreview } from "./AvatarBuilder";
+import { LGBTQAvatarPicker } from "./LGBTQAvatarPicker";
 
 // TODO: Replace with deployed Soulbound NFT contract address on Polygon
 const PRYDO_NFT_CONTRACT = "0x0000000000000000000000000000000000000000";
@@ -568,6 +569,10 @@ export default function MintSection() {
   const [mintError, setMintError] = useState<string | null>(null);
   const [mintStep, setMintStep] = useState<"polygon" | "icp">("polygon");
   const [icpStored, setIcpStored] = useState(false);
+  const [selectedLGBTQCategory, setSelectedLGBTQCategory] = useState<
+    string | null
+  >(null);
+  const [lgbtqAvatarSrc, setLgbtqAvatarSrc] = useState<string | null>(null);
   const { actor } = useActor();
   const {
     address,
@@ -667,6 +672,8 @@ export default function MintSection() {
           setFaceImageUrl((e.target?.result as string) ?? null);
         };
         reader.readAsDataURL(faceImageFile);
+      } else if (lgbtqAvatarSrc) {
+        setFaceImageUrl(lgbtqAvatarSrc);
       } else {
         setFaceImageUrl(null);
       }
@@ -898,16 +905,14 @@ export default function MintSection() {
                     boxShadow: "0 4px 30px rgba(255,79,216,0.08)",
                   }}
                 >
-                  <div className="text-center mb-5">
-                    <h4 className="font-display font-bold text-white text-base mb-1">
-                      ✦ Your Generative Prydo Avatar
-                    </h4>
-                    <p className="text-white/50 text-xs leading-relaxed max-w-[340px] mx-auto">
-                      Every mint generates a unique avatar from 50+ trait
-                      combinations. Preview a random avatar below.
-                    </p>
-                  </div>
-                  <RandomAvatarPreview />
+                  <LGBTQAvatarPicker
+                    selected={selectedLGBTQCategory}
+                    walletAddress={address ?? undefined}
+                    onSelect={(catId, _traits, svgDataUrl) => {
+                      setSelectedLGBTQCategory(catId);
+                      setLgbtqAvatarSrc(svgDataUrl);
+                    }}
+                  />
                   <div
                     className="mt-5 px-4 py-2.5 rounded-xl text-center text-[11px]"
                     style={{
@@ -916,8 +921,7 @@ export default function MintSection() {
                       color: "rgba(245,200,76,0.85)",
                     }}
                   >
-                    ✦ Genesis avatars have boosted Legendary / Mythic trait
-                    rates
+                    ✦ Genesis avatars feature exclusive LGBTQ+ identity avatars
                   </div>
                 </div>
               </motion.div>
