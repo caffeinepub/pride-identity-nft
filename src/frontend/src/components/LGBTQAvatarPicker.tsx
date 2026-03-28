@@ -5,6 +5,7 @@ import {
   getTraitsDisplayText,
 } from "../utils/avatarGenerator";
 import type { AvatarCategory, AvatarTraits } from "../utils/avatarGenerator";
+import { renderAvatarToCanvas } from "../utils/canvasAvatarRenderer";
 
 const LGBTQ_CATEGORIES: AvatarCategory[] = [
   {
@@ -66,60 +67,6 @@ const LGBTQ_CATEGORIES: AvatarCategory[] = [
 ];
 
 export { LGBTQ_CATEGORIES };
-// Premium avatar variants per category — deterministically selected by wallet address
-const CATEGORY_VARIANTS: Record<string, string[]> = {
-  gay: [
-    "/assets/generated/lgbtq-gay-v1.dim_400x400.png",
-    "/assets/generated/lgbtq-gay-v2.dim_400x400.png",
-    "/assets/generated/lgbtq-gay-v3.dim_400x400.png",
-  ],
-  lesbian: [
-    "/assets/generated/lgbtq-lesbian-v1.dim_400x400.png",
-    "/assets/generated/lgbtq-lesbian-v2.dim_400x400.png",
-    "/assets/generated/lgbtq-lesbian-v3.dim_400x400.png",
-  ],
-  bisexual: [
-    "/assets/generated/lgbtq-bisexual-v1.dim_400x400.png",
-    "/assets/generated/lgbtq-bisexual-v2.dim_400x400.png",
-    "/assets/generated/lgbtq-bisexual-v3.dim_400x400.png",
-  ],
-  "trans-woman": [
-    "/assets/generated/lgbtq-trans-woman-v1.dim_400x400.png",
-    "/assets/generated/lgbtq-trans-woman-v2.dim_400x400.png",
-  ],
-  "trans-man": [
-    "/assets/generated/lgbtq-trans-man-v1.dim_400x400.png",
-    "/assets/generated/lgbtq-trans-man-v2.dim_400x400.png",
-  ],
-  nonbinary: [
-    "/assets/generated/lgbtq-nonbinary-v1.dim_400x400.png",
-    "/assets/generated/lgbtq-nonbinary-v2.dim_400x400.png",
-  ],
-  pansexual: [
-    "/assets/generated/lgbtq-pansexual-v1.dim_400x400.png",
-    "/assets/generated/lgbtq-pansexual-v2.dim_400x400.png",
-  ],
-  asexual: [
-    "/assets/generated/lgbtq-asexual-v1.dim_400x400.png",
-    "/assets/generated/lgbtq-asexual-v2.dim_400x400.png",
-  ],
-};
-
-function selectVariantForWallet(
-  walletAddr: string,
-  categoryId: string,
-): string {
-  const variants = CATEGORY_VARIANTS[categoryId];
-  if (!variants || variants.length === 0) return "";
-  // Hash wallet address to deterministically pick a variant
-  let hash = 0;
-  const key = walletAddr + categoryId;
-  for (let i = 0; i < key.length; i++) {
-    hash = (hash * 31 + key.charCodeAt(i)) >>> 0;
-  }
-  return variants[hash % variants.length];
-}
-
 interface LGBTQAvatarPickerProps {
   selected: string | null;
   walletAddress?: string;
@@ -222,27 +169,25 @@ export function LGBTQAvatarPicker({
     const addr = walletAddress || `guest-${Date.now()}-${Math.random()}`;
     const traits = generateTraitsFromWallet(addr, cat.id);
 
-    // Generate unique CSS filter from traits for premium PNG uniqueness
-    const hue = Math.round(
-      (traits.hairColorIdx * 37 +
-        traits.skinToneIdx * 19 +
-        traits.eyeColorIdx * 13) %
-        360,
-    );
-    const sat =
-      90 + Math.round((traits.outfitIdx * 7 + traits.accessoryIdx * 11) % 40);
-    const bright =
-      92 + Math.round((traits.bgThemeIdx * 5 + traits.expressionIdx * 3) % 16);
-    const contrast = 98 + Math.round((traits.rarityScore * 0.1) % 6);
-    const filter = `hue-rotate(${hue}deg) saturate(${sat}%) brightness(${bright}%) contrast(${contrast}%)`;
-
     // Slight delay for UX feedback
     setTimeout(() => {
-      // Pick a unique variant image based on wallet address — genuinely different face
-      const premiumUrl = selectVariantForWallet(addr, cat.id) || cat.img;
-      setPremiumAvatarUrl(premiumUrl);
-      setPremiumFilter(filter);
-      onSelect(activeCatId!, traits, premiumUrl);
+      try {
+        // Draw unique canvas portrait — genuine 10B+ combinations
+        const offscreen = document.createElement("canvas");
+        offscreen.width = 400;
+        offscreen.height = 400;
+        renderAvatarToCanvas(offscreen, traits, cat.colors);
+        const dataUrl = offscreen.toDataURL("image/png");
+        setPremiumAvatarUrl(dataUrl);
+        setPremiumFilter("");
+        onSelect(activeCatId!, traits, dataUrl);
+      } catch {
+        // Fallback to PNG if canvas fails
+        const fallback = cat.img;
+        setPremiumAvatarUrl(fallback);
+        setPremiumFilter("");
+        onSelect(activeCatId!, traits, fallback);
+      }
       setIsGenerating(false);
     }, 400);
   }
@@ -402,7 +347,7 @@ export function LGBTQAvatarPicker({
             <>
               ✨ Auto Generate My Premium Avatar
               <span className="text-[10px] font-normal opacity-75">
-                10,000+ combinations
+                10,000,000,000+ combinations
               </span>
             </>
           )}
@@ -486,7 +431,7 @@ export function LGBTQAvatarPicker({
                   color: "#e0b0ff",
                 }}
               >
-                ✨ Wallet-Unique Premium Avatar · 155M+ Combinations
+                ✨ Wallet-Unique Canvas Avatar · 10B+ Combinations
               </motion.div>
             )}
 

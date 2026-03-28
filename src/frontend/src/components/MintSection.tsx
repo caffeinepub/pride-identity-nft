@@ -14,10 +14,11 @@ import {
   X,
 } from "lucide-react";
 import { AnimatePresence, motion } from "motion/react";
-import { useCallback, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { useWallet } from "../context/WalletContext";
 import { useActor } from "../hooks/useActor";
 import { generateTraitsFromWallet } from "../utils/avatarGenerator";
+import { stylizePhotoToAvatar } from "../utils/realFaceAvatarRenderer";
 import { LGBTQAvatarPicker, LGBTQ_CATEGORIES } from "./LGBTQAvatarPicker";
 
 type LocalIdentityType = "real-face" | "avatar" | null;
@@ -109,11 +110,13 @@ const includedPills = [
 function FaceUploadPanel({
   faceImageFile,
   facePreviewUrl,
+  stylizedAvatarUrl,
   onFileChange,
   onRemove,
 }: {
   faceImageFile: File | null;
   facePreviewUrl: string | null;
+  stylizedAvatarUrl: string | null;
   onFileChange: (file: File) => void;
   onRemove: () => void;
 }) {
@@ -240,6 +243,46 @@ function FaceUploadPanel({
             >
               <X className="w-4 h-4 text-white/50" />
             </button>
+          </div>
+        )}
+
+        {/* Stylized Pride Avatar Preview */}
+        {stylizedAvatarUrl && (
+          <div className="mt-4 flex flex-col items-center gap-2">
+            <p className="text-white/60 text-[10px] font-bold tracking-[0.15em] uppercase">
+              ✨ Your Stylized Identity Avatar
+            </p>
+            <div
+              className="relative"
+              style={{
+                filter: "drop-shadow(0 0 16px rgba(168,85,247,0.6))",
+              }}
+            >
+              <img
+                src={stylizedAvatarUrl}
+                alt="Stylized pride avatar"
+                className="w-32 h-32 rounded-full object-cover"
+                style={{
+                  border: "3px solid rgba(168,85,247,0.8)",
+                }}
+              />
+              <div
+                className="absolute -bottom-1 left-1/2 -translate-x-1/2 px-2 py-0.5 rounded-full text-[9px] font-bold whitespace-nowrap"
+                style={{
+                  background: "linear-gradient(135deg, #7c3aed, #ec4899)",
+                  color: "white",
+                }}
+              >
+                Pride Avatar
+              </div>
+            </div>
+          </div>
+        )}
+
+        {faceImageFile && !stylizedAvatarUrl && (
+          <div className="mt-3 flex items-center justify-center gap-2 text-white/40 text-xs">
+            <Sparkles className="w-3 h-3 animate-pulse" />
+            Generating your pride avatar...
           </div>
         )}
 
@@ -549,6 +592,9 @@ export default function MintSection() {
     string | null
   >(null);
   const [lgbtqAvatarSrc, setLgbtqAvatarSrc] = useState<string | null>(null);
+  const [stylizedAvatarUrl, setStylizedAvatarUrl] = useState<string | null>(
+    null,
+  );
   const { actor } = useActor();
   const {
     address,
@@ -565,18 +611,44 @@ export default function MintSection() {
     if (facePreviewUrl) URL.revokeObjectURL(facePreviewUrl);
     setFaceImageFile(file);
     setFacePreviewUrl(URL.createObjectURL(file));
+    setStylizedAvatarUrl(null);
+    const cat = selectedLGBTQCategory
+      ? LGBTQ_CATEGORIES.find((c) => c.id === selectedLGBTQCategory)
+      : null;
+    const catColors = cat
+      ? cat.colors
+      : ["#FF0000", "#FF7700", "#FFFF00", "#00FF00", "#0000FF", "#8B00FF"];
+    stylizePhotoToAvatar(file, catColors)
+      .then((url) => setStylizedAvatarUrl(url))
+      .catch(() => {});
   };
 
   const handleFaceRemove = () => {
     if (facePreviewUrl) URL.revokeObjectURL(facePreviewUrl);
     setFaceImageFile(null);
     setFacePreviewUrl(null);
+    setStylizedAvatarUrl(null);
   };
 
   const handleIdentitySelect = (type: LocalIdentityType) => {
     if (type !== "real-face") handleFaceRemove();
     setLocalIdentityType(type);
   };
+
+  // Re-stylize photo when LGBTQ category changes
+  useEffect(() => {
+    if (!faceImageFile || identityType !== "real-face") return;
+    const cat = selectedLGBTQCategory
+      ? LGBTQ_CATEGORIES.find((c) => c.id === selectedLGBTQCategory)
+      : null;
+    const catColors = cat
+      ? cat.colors
+      : ["#FF0000", "#FF7700", "#FFFF00", "#00FF00", "#0000FF", "#8B00FF"];
+    setStylizedAvatarUrl(null);
+    stylizePhotoToAvatar(faceImageFile, catColors)
+      .then((url) => setStylizedAvatarUrl(url))
+      .catch(() => {});
+  }, [selectedLGBTQCategory, faceImageFile, identityType]);
 
   const handleMintClick = () => {
     if (!address) {
@@ -643,6 +715,9 @@ export default function MintSection() {
     setIdentityType(identityType === "real-face" ? "realface" : "avatar");
 
     if (identityType === "real-face" && faceImageFile) {
+      if (stylizedAvatarUrl) {
+        setSelectedAvatarDataUrl(stylizedAvatarUrl);
+      }
       const reader = new FileReader();
       reader.onload = (e) => {
         setFaceImageUrl((e.target?.result as string) ?? null);
@@ -871,6 +946,7 @@ export default function MintSection() {
               <FaceUploadPanel
                 faceImageFile={faceImageFile}
                 facePreviewUrl={facePreviewUrl}
+                stylizedAvatarUrl={stylizedAvatarUrl}
                 onFileChange={handleFaceFileChange}
                 onRemove={handleFaceRemove}
               />

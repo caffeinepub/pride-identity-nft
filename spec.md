@@ -1,27 +1,38 @@
 # Prydo Identity NFT
 
 ## Current State
-NFT cards use a generic trading card format (NFTCard.tsx) with rarity-colored border glow, SVG art panel, trait rows, and score bar. ProfilePanel shows a minted card using NFTCard. AvatarSection shows 4 showcase cards using NFTCard.
+- Real Face upload section: shows uploaded photo as circular preview only. No avatar is generated from the photo.
+- Avatar Identity: LGBTQAvatarPicker with 8 categories. `handleAutoGenerate` picks 1 of 2-3 PNG variants + applies CSS filter. Visually only 2-3 faces per category, not genuine 10,000+ unique avatars.
+- avatarGenerator.ts generates rich deterministic traits (1.5B+ mathematically) but these traits are not used to render unique visuals.
 
 ## Requested Changes (Diff)
 
 ### Add
-- New `PrydoBadge.tsx` component with two badge variants:
-  1. **Genesis badge** (gold ornate): Decorative gold frame with wing motifs at top corners, crystalline gem centerpiece at top, galaxy/nebula background inside card, character avatar/face in center, name + pronouns text block, gold ribbon banner with "GENESIS" text, bottom stats row showing LGBTQ+ Pioneer icon + Voting Power 150
-  2. **Member badge** (silver chrome): Sleek silver/chrome futuristic frame, rainbow pride flag decoration at top center, blue radial ray burst background, character avatar/face, name + pronouns, "Prydo Member" tier label, bottom stats row showing Joined year + Reputation score
+- **Real Face → Stylized Avatar**: When user uploads photo in Real Face section, use Canvas API to generate a stylized Pixar/pride-themed avatar from it:
+  - Load image onto canvas
+  - Apply artistic posterize/cartoon effect (pixel-level manipulation: reduce color palette, boost contrast, add edge softening)
+  - Overlay pride flag colors as a glowing border ring
+  - Add a subtle gradient vignette overlay in category colors
+  - Add a small pride badge/crown icon overlay
+  - Show the canvas-generated stylized avatar below/alongside the photo preview
+  - Store this canvas data URL as the avatar for minting
+- **Canvas SVG Avatar Renderer** (`src/frontend/src/utils/canvasAvatarRenderer.ts`):
+  - A function `renderAvatarToCanvas(canvas, traits, categoryColors)` that draws a genuinely unique Pixar-style face using Canvas 2D API
+  - Elements to draw: background gradient (12 themes), face oval (6 shapes), skin tone fill (10 tones), hair shape+color (15 styles × 12 colors), eyes (8 shapes × 8 colors), eyebrows (6 styles), nose (6 styles), lips (8 styles/colors), outfit collar area (15 styles), accessory (12 options: crown, glasses, earrings, etc.), special mark (8: scar, freckles, glow, etc.)
+  - Total: 12×6×10×15×12×8×8×6×6×8×15×12×8 = well over 10,000+ (actually billions)
+  - Category colors used for background glow, hair highlight, outfit accent
 
 ### Modify
-- `ProfilePanel.tsx`: Use new `PrydoBadge` component instead of `NFTCard` for minted user cards. Genesis ID tier → genesis variant. Regular/avatar identity → member variant.
-- `AvatarSection.tsx`: Replace/update the 4 showcase NFT trading cards to use the new `PrydoBadge` design aesthetic — at minimum the two main card types (Genesis gold + Member silver) should be showcased.
-- `NFTCard.tsx`: Can keep for backward compatibility but the primary display cards should use the new badge design.
+- **LGBTQAvatarPicker.tsx**: In `handleAutoGenerate`, call `renderAvatarToCanvas` with derived traits to produce a genuinely unique canvas-rendered avatar data URL (not just CSS filter on same PNG). Display this canvas-generated image as the premium avatar.
+- **MintSection.tsx**: After real face photo is uploaded, render stylized canvas avatar using the photo + category colors and store it as `lgbtqAvatarSrc` for minting. Show it alongside the photo preview with label "Your Stylized Identity Avatar".
+- **LGBTQAvatarPicker.tsx combo counter**: Update the displayed combination count to show actual computed count based on trait array sizes.
 
 ### Remove
-- Nothing removed
+- Nothing
 
 ## Implementation Plan
-1. Create `src/frontend/src/components/PrydoBadge.tsx` with two variants rendered via SVG/CSS — genesis (gold, ornate wings/gems/galaxy) and member (silver, rainbow flag/blue rays)
-2. The badge should accept: `variant: 'genesis' | 'member'`, `name: string`, `pronouns: string`, `avatarContent: ReactNode`, `votingPower?: number`, `reputation?: number`, `joinedYear?: number`
-3. Genesis badge SVG frame: multi-layer gold gradient border, decorative golden wings top-left/right, crystal gem SVG at top-center (with prismatic rainbow), galaxy nebula background behind avatar
-4. Member badge SVG frame: silver/chrome gradient border with tech panel details, rainbow flag SVG strip at top-center, blue radial ray background behind avatar
-5. Update ProfilePanel to use PrydoBadge
-6. Update AvatarSection showcase to use PrydoBadge
+1. Create `src/frontend/src/utils/canvasAvatarRenderer.ts` — full Canvas 2D renderer with all trait arrays and `renderAvatarToCanvas(canvas, traits, categoryColors)` function
+2. Create `src/frontend/src/utils/realFaceAvatarRenderer.ts` — function `stylizePhotoToAvatar(imageFile, categoryColors): Promise<string>` using Canvas to apply artistic effects and pride overlays on an uploaded photo
+3. Update `LGBTQAvatarPicker.tsx` `handleAutoGenerate` to use canvas renderer instead of PNG+filter
+4. Update `MintSection.tsx` `handleFaceFileChange` to call `stylizePhotoToAvatar` after upload, show stylized result as avatar preview
+5. Validate build
