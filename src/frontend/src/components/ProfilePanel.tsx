@@ -278,7 +278,8 @@ function MintedCard({
   onChainRecord: PrydoIdWithPhoto | null;
   isFetchingOnChain: boolean;
 }) {
-  const { faceImageUrl } = useWallet();
+  const { faceImageUrl, selectedAvatarDataUrl, selectedAvatarCategory } =
+    useWallet();
   const onChainPhotoUrl = onChainRecord?.photo?.getDirectURL() ?? null;
   const mintedAt = onChainRecord?.idRecord?.timestamp
     ? new Date(
@@ -295,7 +296,28 @@ function MintedCard({
   const faceUrl = onChainPhotoUrl ?? faceImageUrl;
 
   const artNode =
-    identityType === "avatar" ? (
+    identityType === "avatar" && selectedAvatarDataUrl ? (
+      <div
+        style={{
+          width: "200px",
+          height: "200px",
+          borderRadius: "50%",
+          overflow: "hidden",
+          boxShadow: "0 0 24px 6px rgba(139, 92, 246, 0.7)",
+          border: "3px solid rgba(139, 92, 246, 0.8)",
+        }}
+      >
+        <img
+          src={selectedAvatarDataUrl}
+          alt={
+            selectedAvatarCategory
+              ? `${selectedAvatarCategory} Avatar`
+              : "LGBTQ+ Avatar"
+          }
+          style={{ width: "100%", height: "100%", objectFit: "cover" }}
+        />
+      </div>
+    ) : identityType === "avatar" ? (
       <AvatarBuilder seed={seed} size={200} isGenesis={true} />
     ) : identityType === "realface" && faceUrl ? (
       <div
@@ -382,7 +404,9 @@ function MintedCard({
           name={
             identityType === "realface"
               ? "Real Face Identity"
-              : `${traits.hairStyle} Genesis`
+              : selectedAvatarCategory
+                ? `${selectedAvatarCategory.charAt(0).toUpperCase() + selectedAvatarCategory.slice(1)} Genesis`
+                : `${traits.hairStyle} Genesis`
           }
           pronouns="They/Them"
           avatarContent={artNode}

@@ -31,6 +31,10 @@ interface WalletContextValue {
   setHasMinted: (v: boolean) => void;
   setIdentityType: (v: IdentityType) => void;
   setFaceImageUrl: (v: string | null) => void;
+  selectedAvatarDataUrl: string | null;
+  selectedAvatarCategory: string | null;
+  setSelectedAvatarDataUrl: (v: string | null) => void;
+  setSelectedAvatarCategory: (v: string | null) => void;
   switchToPolygon: () => Promise<void>;
   error: string | null;
 }
@@ -45,6 +49,12 @@ export function WalletProvider({ children }: { children: React.ReactNode }) {
   const [hasMinted, setHasMinted] = useState(false);
   const [identityType, setIdentityType] = useState<IdentityType>(null);
   const [faceImageUrl, setFaceImageUrl] = useState<string | null>(null);
+  const [selectedAvatarDataUrl, setSelectedAvatarDataUrl] = useState<
+    string | null
+  >(null);
+  const [selectedAvatarCategory, setSelectedAvatarCategory] = useState<
+    string | null
+  >(null);
   const [isProfileOpen, setIsProfileOpen] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [chainId, setChainId] = useState<string | null>(null);
@@ -181,6 +191,8 @@ export function WalletProvider({ children }: { children: React.ReactNode }) {
     setHasMinted(false);
     setIdentityType(null);
     setFaceImageUrl(null);
+    setSelectedAvatarDataUrl(null);
+    setSelectedAvatarCategory(null);
     setIsProfileOpen(false);
     setChainId(null);
   }, []);
@@ -209,6 +221,10 @@ export function WalletProvider({ children }: { children: React.ReactNode }) {
         setHasMinted,
         setIdentityType,
         setFaceImageUrl,
+        selectedAvatarDataUrl,
+        selectedAvatarCategory,
+        setSelectedAvatarDataUrl,
+        setSelectedAvatarCategory,
         switchToPolygon,
         error,
       }}

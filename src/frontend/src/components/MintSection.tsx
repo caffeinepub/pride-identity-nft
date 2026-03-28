@@ -581,6 +581,8 @@ export default function MintSection() {
     setHasMinted,
     setIdentityType,
     setFaceImageUrl,
+    setSelectedAvatarDataUrl,
+    setSelectedAvatarCategory,
   } = useWallet();
 
   const handleFaceFileChange = (file: File) => {
@@ -674,6 +676,8 @@ export default function MintSection() {
         reader.readAsDataURL(faceImageFile);
       } else if (lgbtqAvatarSrc) {
         setFaceImageUrl(lgbtqAvatarSrc);
+        setSelectedAvatarDataUrl(lgbtqAvatarSrc);
+        setSelectedAvatarCategory(selectedLGBTQCategory);
       } else {
         setFaceImageUrl(null);
       }
