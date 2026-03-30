@@ -67,13 +67,11 @@ export default function NavBar() {
           data-ocid="nav.link"
         >
           <img
-            src="/assets/uploads/chatgpt_image_mar_24_2026_10_01_42_pm-019d20b0-a889-76df-962b-447bc78cbc93-1.png"
+            src="/assets/generated/prydo-logo-new.png"
             alt="Prydo"
-            className="w-10 h-10 object-contain rounded-lg"
+            className="h-10 w-auto object-contain"
+            style={{ filter: "drop-shadow(0 0 8px rgba(139,92,246,0.4))" }}
           />
-          <span className="font-display font-bold text-white text-base tracking-widest">
-            PRYDO
-          </span>
         </a>
 
         <ul className="hidden lg:flex items-center gap-6">
@@ -131,7 +129,6 @@ export default function NavBar() {
                       {address}
                     </p>
                     <div className="mt-2">
-                      {/* ICP Network indicator — no network switching needed */}
                       <div
                         className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs"
                         style={{
@@ -242,7 +239,6 @@ export default function NavBar() {
                 />
                 {shortAddress}
               </div>
-              {/* ICP Network badge — mobile */}
               <div
                 className="px-4 py-2 rounded-full text-xs font-semibold flex items-center justify-center gap-2"
                 style={{
