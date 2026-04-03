@@ -1,38 +1,79 @@
 import { motion, useInView } from "motion/react";
 import { useRef, useState } from "react";
-import AvatarBuilder from "./AvatarBuilder";
-import PrydoBadge from "./PrydoBadge";
 
-const showcaseBadges = [
+// Deterministic CSS filter from a seed string
+function getWalletFilter(seed: string): string {
+  let hash = 0;
+  for (let i = 0; i < seed.length; i++) {
+    hash = (hash * 31 + seed.charCodeAt(i)) >>> 0;
+  }
+  const hue = hash % 360;
+  const sat = 90 + (hash % 40);
+  const bright = 95 + (hash % 20);
+  const contrast = 100 + (hash % 15);
+  return `hue-rotate(${hue}deg) saturate(${sat}%) brightness(${bright}%) contrast(${contrast}%)`;
+}
+
+const showcaseAvatars = [
   {
-    variant: "genesis" as const,
-    name: "Cosmic Guardian",
-    pronouns: "They/Them",
-    seed: "cosmic-guardian-007",
-    votingPower: 200,
-  },
-  {
-    variant: "member" as const,
-    name: "Prydo Warrior",
-    pronouns: "She/Her",
-    seed: "prydo-warrior-023",
-    reputation: 87,
-    joinedYear: 2024,
-  },
-  {
-    variant: "genesis" as const,
-    name: "Golden Legend",
+    id: "gay",
+    label: "Gay",
+    image: "/assets/generated/lgbtq-gay-male.dim_400x400.png",
+    flagColors: [
+      "#078D70",
+      "#26CEAA",
+      "#98E8C1",
+      "#FFFFFF",
+      "#7BADE2",
+      "#5049CC",
+      "#3D1A8E",
+    ],
+    seed: "gay-showcase-001",
     pronouns: "He/Him",
-    seed: "golden-legend-001",
-    votingPower: 150,
+    tier: "Genesis",
+    rarity: "Legendary",
+    rarityColor: "#F5C84C",
   },
   {
-    variant: "member" as const,
-    name: "Mythic Transcendent",
-    pronouns: "Ze/Zir",
-    seed: "mythic-transcendent-002",
-    reputation: 124,
-    joinedYear: 2026,
+    id: "lesbian",
+    label: "Lesbian",
+    image: "/assets/generated/lgbtq-lesbian.dim_400x400.png",
+    flagColors: [
+      "#D52D00",
+      "#EF7627",
+      "#FF9A56",
+      "#FFFFFF",
+      "#D162A4",
+      "#B55690",
+      "#A50062",
+    ],
+    seed: "lesbian-showcase-002",
+    pronouns: "She/Her",
+    tier: "Genesis",
+    rarity: "Epic",
+    rarityColor: "#8B5CF6",
+  },
+  {
+    id: "transwoman",
+    label: "Trans Woman",
+    image: "/assets/generated/lgbtq-trans-woman.dim_400x400.png",
+    flagColors: ["#55CDFC", "#F7A8B8", "#FFFFFF", "#F7A8B8", "#55CDFC"],
+    seed: "transwoman-showcase-003",
+    pronouns: "She/Her",
+    tier: "Genesis",
+    rarity: "Mythic",
+    rarityColor: "#FF4FD8",
+  },
+  {
+    id: "pansexual",
+    label: "Pansexual",
+    image: "/assets/generated/lgbtq-pansexual.dim_400x400.png",
+    flagColors: ["#FF218C", "#FFD800", "#21B1FF"],
+    seed: "pansexual-showcase-004",
+    pronouns: "They/Them",
+    tier: "Genesis",
+    rarity: "Legendary",
+    rarityColor: "#F5C84C",
   },
 ];
 
@@ -213,6 +254,109 @@ function LiveRarityMeter() {
   );
 }
 
+function PremiumAvatarCard({
+  avatar,
+  index,
+}: {
+  avatar: (typeof showcaseAvatars)[0];
+  index: number;
+}) {
+  const filter = getWalletFilter(avatar.seed);
+  const mainFlagColor = avatar.flagColors[0];
+
+  return (
+    <motion.div
+      initial={{ opacity: 0, y: 30 }}
+      whileInView={{ opacity: 1, y: 0 }}
+      viewport={{ once: true }}
+      transition={{ duration: 0.6, delay: index * 0.1 }}
+      className="relative rounded-2xl overflow-hidden flex flex-col"
+      style={{
+        background:
+          "linear-gradient(160deg, rgba(20,8,50,0.95), rgba(10,5,25,0.98))",
+        border: `1px solid ${mainFlagColor}44`,
+        boxShadow: `0 0 30px ${mainFlagColor}22, inset 0 0 30px rgba(0,0,0,0.4)`,
+      }}
+      data-ocid={`avatars.showcase.${avatar.id}`}
+    >
+      {/* Pride flag stripe top */}
+      <div className="h-1.5 w-full flex">
+        {avatar.flagColors.map((c) => (
+          <div key={c} className="flex-1" style={{ background: c }} />
+        ))}
+      </div>
+
+      {/* Rarity badge */}
+      <div className="absolute top-4 right-3 z-10">
+        <span
+          className="text-[10px] font-bold px-2.5 py-1 rounded-full tracking-wider"
+          style={{
+            background: `${avatar.rarityColor}22`,
+            color: avatar.rarityColor,
+            border: `1px solid ${avatar.rarityColor}55`,
+          }}
+        >
+          {avatar.rarity}
+        </span>
+      </div>
+
+      {/* Avatar image */}
+      <div className="flex justify-center pt-6 pb-4 px-4">
+        <div
+          className="relative rounded-full overflow-hidden"
+          style={{
+            width: 140,
+            height: 140,
+            border: `3px solid ${mainFlagColor}88`,
+            boxShadow: `0 0 24px ${mainFlagColor}55, 0 0 50px ${mainFlagColor}22`,
+          }}
+        >
+          <img
+            src={avatar.image}
+            alt={`${avatar.label} premium avatar`}
+            className="w-full h-full object-cover"
+            style={{ filter }}
+          />
+        </div>
+      </div>
+
+      {/* Info */}
+      <div className="px-4 pb-5 flex flex-col items-center gap-2">
+        <div className="text-center">
+          <h3 className="font-display font-bold text-white text-lg">
+            {avatar.label}
+          </h3>
+          <p className="text-white/50 text-xs">{avatar.pronouns}</p>
+        </div>
+
+        {/* Tier pill */}
+        <span
+          className="text-[10px] font-bold px-3 py-1 rounded-full tracking-[0.15em] uppercase"
+          style={{
+            background: "rgba(245,200,76,0.12)",
+            color: "#F5C84C",
+            border: "1px solid rgba(245,200,76,0.3)",
+          }}
+        >
+          ✦ {avatar.tier} ID
+        </span>
+
+        {/* Wallet-bound badge */}
+        <span
+          className="text-[9px] font-bold px-2.5 py-0.5 rounded-full tracking-wider"
+          style={{
+            background: "rgba(34,211,238,0.1)",
+            color: "#22D3EE",
+            border: "1px solid rgba(34,211,238,0.25)",
+          }}
+        >
+          🔒 Wallet-Bound
+        </span>
+      </div>
+    </motion.div>
+  );
+}
+
 export default function AvatarSection() {
   return (
     <section id="avatars" className="py-24 relative">
@@ -231,9 +375,9 @@ export default function AvatarSection() {
             Your Unique Prydo Avatar
           </h2>
           <p className="text-white/60 mt-4 max-w-2xl mx-auto">
-            Each Prydo ID automatically generates a unique avatar using
-            algorithmic traits. Every avatar is unique and permanently stored on
-            the blockchain.
+            Each Prydo ID automatically generates a unique premium avatar using
+            algorithmic traits. Every avatar is wallet-bound and permanently
+            stored on the blockchain.
           </p>
         </motion.div>
 
@@ -260,39 +404,14 @@ export default function AvatarSection() {
           ))}
         </motion.div>
 
-        {/* Prydo Badge Gallery */}
+        {/* Premium Avatar Gallery — 4 LGBTQ+ categories */}
         <div className="overflow-x-auto pb-4 mb-14">
           <div
-            className="grid gap-8 min-w-[600px] lg:min-w-0"
+            className="grid gap-6 min-w-[600px] lg:min-w-0"
             style={{ gridTemplateColumns: "repeat(4, minmax(0, 1fr))" }}
           >
-            {showcaseBadges.map((badge, i) => (
-              <motion.div
-                key={badge.name}
-                initial={{ opacity: 0, y: 30 }}
-                whileInView={{ opacity: 1, y: 0 }}
-                viewport={{ once: true }}
-                transition={{ duration: 0.6, delay: i * 0.1 }}
-                className="flex justify-center"
-                style={{ paddingTop: 40 }}
-                data-ocid={`avatars.item.${i + 1}`}
-              >
-                <PrydoBadge
-                  variant={badge.variant}
-                  name={badge.name}
-                  pronouns={badge.pronouns}
-                  avatarContent={
-                    <AvatarBuilder
-                      seed={badge.seed}
-                      size={180}
-                      isGenesis={badge.variant === "genesis"}
-                    />
-                  }
-                  votingPower={badge.votingPower}
-                  reputation={badge.reputation}
-                  joinedYear={badge.joinedYear}
-                />
-              </motion.div>
+            {showcaseAvatars.map((avatar, i) => (
+              <PremiumAvatarCard key={avatar.id} avatar={avatar} index={i} />
             ))}
           </div>
         </div>

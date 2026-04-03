@@ -107,6 +107,31 @@ const includedPills = [
   "Future Ecosystem Benefits",
 ];
 
+function PolygonCopyButton({ address }: { address: string }) {
+  const [copied, setCopied] = useState(false);
+  const handleCopy = async () => {
+    await navigator.clipboard.writeText(address);
+    setCopied(true);
+    setTimeout(() => setCopied(false), 2000);
+  };
+  return (
+    <button
+      type="button"
+      onClick={handleCopy}
+      className="flex-shrink-0 px-2.5 py-1 rounded-lg text-[10px] font-bold transition-all hover:opacity-80"
+      style={{
+        background: copied ? "rgba(34,211,238,0.15)" : "rgba(139,92,246,0.15)",
+        color: copied ? "#22D3EE" : "#A78BFA",
+        border: copied
+          ? "1px solid rgba(34,211,238,0.3)"
+          : "1px solid rgba(139,92,246,0.3)",
+      }}
+    >
+      {copied ? "Copied!" : "Copy"}
+    </button>
+  );
+}
+
 function FaceUploadPanel({
   faceImageFile,
   facePreviewUrl,
@@ -524,6 +549,28 @@ function MintConfirmModal({
           <div className="flex justify-between text-xs">
             <span className="text-white/50">Cost</span>
             <span className="text-green-400 font-bold">FREE</span>
+          </div>
+        </div>
+
+        {/* Polygon Payment Address */}
+        <div
+          className="rounded-xl p-4 mb-4"
+          style={{
+            background: "rgba(139,92,246,0.06)",
+            border: "1px solid rgba(139,92,246,0.2)",
+          }}
+        >
+          <p className="text-white/50 text-[10px] font-bold uppercase tracking-wider mb-2">
+            Polygon Payment Address
+          </p>
+          <div className="flex items-center gap-2">
+            <span
+              className="font-mono text-[11px] flex-1 break-all"
+              style={{ color: "#A78BFA" }}
+            >
+              0x89c694ca25D71dEdd4389bdF0D8846595C00A8C1
+            </span>
+            <PolygonCopyButton address="0x89c694ca25D71dEdd4389bdF0D8846595C00A8C1" />
           </div>
         </div>
 

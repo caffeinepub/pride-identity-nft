@@ -1,6 +1,7 @@
 import { AlertTriangle } from "lucide-react";
 import { useState } from "react";
 import AboutSection from "./components/AboutSection";
+import AdminPanel from "./components/AdminPanel";
 import AvatarSection from "./components/AvatarSection";
 import DAOGovernanceModal from "./components/DAOGovernanceModal";
 import DecentralizedStoragePanel from "./components/DecentralizedStoragePanel";
@@ -118,6 +119,16 @@ function AppInner() {
 }
 
 export default function App() {
+  const isAdmin = window.location.pathname === "/admin";
+
+  if (isAdmin) {
+    return (
+      <WalletProvider>
+        <AdminPanel />
+      </WalletProvider>
+    );
+  }
+
   return (
     <WalletProvider>
       <AppInner />
