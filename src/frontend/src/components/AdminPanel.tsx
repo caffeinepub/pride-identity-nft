@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useState } from "react";
+import { loadConfig } from "../config";
 import { useActor } from "../hooks/useActor";
 
 const ADMIN_PASSWORD = "prydo-admin-2024";
@@ -9,6 +10,7 @@ interface MintedRecord {
   tier: string;
   avatarType: string;
   mintDate: string;
+  rawTimestamp?: bigint;
 }
 
 function formatTimestamp(ts: bigint): string {
@@ -34,6 +36,18 @@ function AdminDashboard() {
   const [error, setError] = useState<string | null>(null);
   const [copied, setCopied] = useState(false);
   const [lastRefresh, setLastRefresh] = useState<Date>(new Date());
+  const [canisterId, setCanisterId] = useState<string | null>(null);
+
+  useEffect(() => {
+    loadConfig()
+      .then((cfg) => setCanisterId(cfg.backend_canister_id))
+      .catch(() => {});
+  }, []);
+
+  const getExplorerUrl = () => {
+    if (!canisterId) return "https://dashboard.internetcomputer.org";
+    return `https://dashboard.internetcomputer.org/canister/${canisterId}`;
+  };
 
   const fetchData = useCallback(async () => {
     if (!actor) return;
@@ -50,17 +64,12 @@ function AdminDashboard() {
         tier: item.idRecord.tier,
         avatarType: item.idRecord.avatarType,
         mintDate: formatTimestamp(item.idRecord.timestamp),
+        rawTimestamp: item.idRecord.timestamp,
       }));
       // Sort newest first
-      const sorted = [...mapped].sort((a, b) => {
-        const aTs =
-          allIds.find((x) => x.idRecord.wallet === a.wallet)?.idRecord
-            .timestamp ?? 0n;
-        const bTs =
-          allIds.find((x) => x.idRecord.wallet === b.wallet)?.idRecord
-            .timestamp ?? 0n;
-        return Number(bTs) - Number(aTs);
-      });
+      const sorted = [...mapped].sort((a, b) =>
+        Number((b.rawTimestamp ?? 0n) - (a.rawTimestamp ?? 0n)),
+      );
       setRecords(sorted);
       setLastRefresh(new Date());
     } catch {
@@ -78,8 +87,6 @@ function AdminDashboard() {
     .filter((r) => r.wallet?.startsWith("0x"))
     .map((r) => r.wallet);
 
-  // For today's mints count, we'd need the raw timestamps — approximate with display
-  // Since we mapped to string, re-derive from raw count vs total
   const todayMints = records.filter((r) =>
     r.mintDate.includes(
       new Date().toLocaleDateString("en-US", {
@@ -136,6 +143,20 @@ function AdminDashboard() {
         </div>
         <div className="flex items-center gap-2">
           <a
+            href={getExplorerUrl()}
+            target="_blank"
+            rel="noopener noreferrer"
+            data-ocid="admin.explorer.link"
+            className="px-3 py-1.5 rounded-lg text-xs font-semibold transition-all hover:opacity-80"
+            style={{
+              color: "#22D3EE",
+              background: "rgba(34,211,238,0.12)",
+              border: "1px solid rgba(34,211,238,0.35)",
+            }}
+          >
+            🔗 ICP Explorer
+          </a>
+          <a
             href="/"
             className="px-3 py-1.5 rounded-lg text-xs text-white/60 hover:text-white/90 transition-colors"
             style={{ border: "1px solid rgba(255,255,255,0.1)" }}
@@ -146,6 +167,7 @@ function AdminDashboard() {
             type="button"
             onClick={fetchData}
             disabled={isLoading}
+            data-ocid="admin.refresh.button"
             className="px-4 py-1.5 rounded-lg text-xs font-bold text-white transition-all hover:opacity-80 disabled:opacity-50"
             style={{ background: "linear-gradient(135deg,#8B5CF6,#6D28D9)" }}
           >
@@ -165,6 +187,68 @@ function AdminDashboard() {
             }}
           >
             ⚠️ {error}
+          </div>
+        )}
+
+        {/* Canister Info Banner */}
+        {canisterId && (
+          <div
+            className="rounded-2xl p-5"
+            style={{
+              background:
+                "linear-gradient(135deg, rgba(34,211,238,0.06), rgba(99,102,241,0.08))",
+              border: "1px solid rgba(34,211,238,0.2)",
+            }}
+          >
+            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+              <div>
+                <p
+                  className="text-xs font-bold uppercase tracking-wider mb-1"
+                  style={{ color: "rgba(34,211,238,0.7)" }}
+                >
+                  ICP Canister
+                </p>
+                <p
+                  className="font-mono text-sm font-semibold break-all"
+                  style={{ color: "#22D3EE" }}
+                >
+                  {canisterId}
+                </p>
+                <p className="text-white/40 text-xs mt-1">
+                  All Prydo ID NFTs are stored on this canister
+                </p>
+              </div>
+              <div className="flex flex-wrap gap-2 shrink-0">
+                <a
+                  href={getExplorerUrl()}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  data-ocid="admin.canister.explorer.link"
+                  className="inline-flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-bold transition-all hover:opacity-80"
+                  style={{
+                    background: "rgba(34,211,238,0.12)",
+                    color: "#22D3EE",
+                    border: "1px solid rgba(34,211,238,0.3)",
+                  }}
+                >
+                  🔗 View Canister on ICP Explorer
+                </a>
+                <a
+                  href={`https://dashboard.internetcomputer.org/canister/${canisterId}#query=getIdCount`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  data-ocid="admin.canister.query.link"
+                  className="inline-flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-bold transition-all hover:opacity-80"
+                  style={{
+                    background: "rgba(99,102,241,0.12)",
+                    color: "#818CF8",
+                    border: "1px solid rgba(99,102,241,0.3)",
+                  }}
+                >
+                  📊 Query Canister
+                </a>
+              </div>
+            </div>
           </div>
         )}
 
@@ -274,6 +358,7 @@ function AdminDashboard() {
               type="button"
               onClick={copyAllWallets}
               disabled={allIds.length === 0}
+              data-ocid="admin.copy_wallets.button"
               className="flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-bold transition-all hover:opacity-80 disabled:opacity-40"
               style={{
                 background: copied
@@ -315,17 +400,22 @@ function AdminDashboard() {
                   <tr
                     style={{ borderBottom: "1px solid rgba(255,255,255,0.05)" }}
                   >
-                    {["#", "Wallet", "Tier", "Avatar Type", "Mint Date"].map(
-                      (h) => (
-                        <th
-                          key={h}
-                          className="text-left px-5 py-3 text-xs font-bold tracking-wider"
-                          style={{ color: "rgba(255,255,255,0.35)" }}
-                        >
-                          {h}
-                        </th>
-                      ),
-                    )}
+                    {[
+                      "#",
+                      "Wallet",
+                      "Tier",
+                      "Avatar Type",
+                      "Mint Date",
+                      "Explorer",
+                    ].map((h) => (
+                      <th
+                        key={h}
+                        className="text-left px-5 py-3 text-xs font-bold tracking-wider"
+                        style={{ color: "rgba(255,255,255,0.35)" }}
+                      >
+                        {h}
+                      </th>
+                    ))}
                   </tr>
                 </thead>
                 <tbody>
@@ -386,6 +476,22 @@ function AdminDashboard() {
                       <td className="px-5 py-3 text-white/50 text-xs">
                         {record.mintDate}
                       </td>
+                      <td className="px-5 py-3">
+                        <a
+                          href={getExplorerUrl()}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          data-ocid={`admin.table.explorer.link.${i + 1}`}
+                          className="inline-flex items-center gap-1 text-[10px] font-bold px-2 py-1 rounded-lg transition-all hover:opacity-80"
+                          style={{
+                            background: "rgba(34,211,238,0.1)",
+                            color: "#22D3EE",
+                            border: "1px solid rgba(34,211,238,0.25)",
+                          }}
+                        >
+                          🔗 ICP
+                        </a>
+                      </td>
                     </tr>
                   ))}
                 </tbody>
@@ -394,10 +500,26 @@ function AdminDashboard() {
           )}
         </div>
 
-        {/* Footer note */}
-        <p className="text-center text-white/20 text-xs pb-4">
-          Data loaded live from ICP canister · Prydo Admin Panel
-        </p>
+        {/* Footer */}
+        <div className="flex items-center justify-between pb-4">
+          <p className="text-white/20 text-xs">
+            Data loaded live from ICP canister · Prydo Admin Panel
+          </p>
+          <a
+            href={getExplorerUrl()}
+            target="_blank"
+            rel="noopener noreferrer"
+            data-ocid="admin.footer.explorer.link"
+            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold transition-all hover:opacity-80"
+            style={{
+              color: "#22D3EE",
+              background: "rgba(34,211,238,0.08)",
+              border: "1px solid rgba(34,211,238,0.25)",
+            }}
+          >
+            🔗 Open ICP Blockchain Explorer
+          </a>
+        </div>
       </div>
     </div>
   );
